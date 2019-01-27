@@ -30,7 +30,7 @@ Please see the description in the top of the sketch and read the documentation (
 ## Versioning
 
 ### version 1.0 / January 2019
- * Initial version for Raspberry Pi and Ubuntu
+ * Initial version Arduino, ESP32
 
 ## Author
 * Paul van Haastrecht (paulvha@hotmail.com)
