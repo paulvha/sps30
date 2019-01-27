@@ -1,8 +1,8 @@
-# SPS30 ===========================================================
+# Sensirion SPS30 <br>===========================================================
 
 A program to set instructions and get information from an SPS30. It has been
 tested to run either UART or I2C communcation on ESP32, MEGA2560 and UNO.
-<br> A detailed description of the many options and findings are in sds011.odt
+<br> A detailed description of the options and findings are in SPS30.odt
 
 ## Getting Started
 As part of a larger project I am looking at analyzing and understanding the air quality.
@@ -22,7 +22,7 @@ Obtain the zip and install like any other
 
 ## Program usage
 ### Program options
-Please see the descriptin in the top of the sketch and read the documentation (odt)
+Please see the description in the top of the sketch and read the documentation (odt)
 
 
 ## Versioning
