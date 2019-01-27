@@ -1,0 +1,73 @@
+#######################################
+# Syntax Coloring Map
+# SPS30  //paulvha January 2019
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+SPS30	KEYWORD1
+sps_values	KEYWORD1
+MassPM1	KEYWORD1
+MassPM1	KEYWORD1
+MassPM2	KEYWORD1
+MassPM4	KEYWORD1
+MassPM10	KEYWORD1
+NumPM0	KEYWORD1
+NumPM1	KEYWORD1
+NumPM2	KEYWORD1
+NumPM4	KEYWORD1
+NumPM10	KEYWORD1
+PartSize	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+SPS30	KEYWORD2
+SetSerialPin	KEYWORD2
+begin	KEYWORD2
+EnableDebugging	KEYWORD2
+probe	KEYWORD2
+reset	KEYWORD2
+start	KEYWORD2
+stop	KEYWORD2
+GetErrDescription	KEYWORD2
+GetSerialNumber	KEYWORD2
+GetArticleCode	KEYWORD2
+GetProductName	KEYWORD2
+GetValues	KEYWORD2
+GetMassPM1	KEYWORD2
+GetMassPM2	KEYWORD2
+GetMassPM4	KEYWORD2
+GetMassPM10	KEYWORD2
+GetNumPM0	KEYWORD2
+GetNumPM1	KEYWORD2
+GetNumPM2	KEYWORD2
+GetNumPM4	KEYWORD2
+GetNumPM10	KEYWORD2
+GetPartSize	KEYWORD2
+GetAutoCleanInt	KEYWORD2
+SetAutoCleanInt	KEYWORD2
+clean	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+ERR_OK	LITERAL1
+ERR_DATALENGTH	LITERAL1
+ERR_UNKNOWNCMD	LITERAL1
+ERR_ACCESSRIGHT	LITERAL1
+ERR_PARAMETER	LITERAL1
+ERR_OUTOFRANGE	LITERAL1
+ERR_CMDSTATE	LITERAL1
+ERR_TIMEOUT	LITERAL1
+ERR_PROTOCOL	LITERAL1
+I2C_COMMS	LITERAL1
+SOFTWARE_SERIAL	LITERAL1
+SERIALPORT	LITERAL1
+SERIALPORT1	LITERAL1
+SERIALPORT2	LITERAL1
+SERIALPORT3	LITERAL1
