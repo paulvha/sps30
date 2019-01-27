@@ -1,5 +1,6 @@
 # Sensirion SPS30
-##<br>===========================================================
+
+##===========================================================
 
 A program to set instructions and get information from an SPS30. It has been
 tested to run either UART or I2C communcation on ESP32, MEGA2560 and UNO.
