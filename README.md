@@ -17,7 +17,7 @@ I have not been able to find a good source for that and was glad to buy the Spar
 (https://www.sparkfun.com/products/15103) which does include a cable with this plug.
 
 ## Prerequisites
-No dependency on other libraries
+Examples 4 and 5 have a dependency on other libraries
 
 ## Software installation
 Obtain the zip and install like any other
