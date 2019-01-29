@@ -13,6 +13,7 @@
  * Development environment specifics:
  * Arduino IDE 1.9
  *
+ * ================ Disclaimer ===================================
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -200,7 +201,7 @@ bool SPS30::Instruct(uint8_t type)
 
         else if (type == SER_RESET){
             _started = false;
-            delay(3000);
+            delay(2000);
         }
 
         return(true);
