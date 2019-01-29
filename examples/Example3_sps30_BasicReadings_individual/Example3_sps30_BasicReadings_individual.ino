@@ -67,7 +67,6 @@
  *  4 Select ----- GND (select I2c)
  *  5 GND -------- GND 
  *  
- *  NO level shifter is needed as the SPS30 is TTL 5V and LVTTL 3.3V compatible
  *  ..........................................................
  *  Successfully tested on ATMEGA2560
  *  
@@ -87,13 +86,16 @@
  *  3 SCL -------- A5 
  *  4 Select ----- GND  (select I2c)
  *  5 GND -------- GND 
- *     
+ *  When UNO-board is detected the UART code is excluded as that 
+ *  does not work on UNO and will save memory. Also some buffers 
+ *  reduced and the call to GetErrDescription() is removed to allow 
+ *  enough memory.
  *  ..........................................................
  *  Not tested ESP8266
  *    
  *  ================================= PARAMETERS =====================================
  *
- *  From line 121 there are configuration parameters for the program
+ *  From line 123 there are configuration parameters for the program
  *  
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -159,10 +161,8 @@
     e.g dsp[SELECTSIZE] = {1,5,2,7,0} will display
     MassPM1, NumPM1, MassPM2, NumPM2
 
-    NOTE : in case you connect over I2C, only the MassPMX info
-    will be available. 
-    
-    */
+    NOTE : With I2C communication, due to restriction, 
+    ONLY the MassPMX info will be available. */
 ////////////////////////////////////////////////////////////
 #define SELECTSIZE 11
 uint8_t dsp[SELECTSIZE] = {1,5,2,7,0};
