@@ -8,9 +8,9 @@ tested to run either UART or I2C communcation on ESP32, MEGA2560, ESP8266 and UN
 
 ## Getting Started
 As part of a larger project I am looking at analyzing and understanding the air quality.
-I have done a number of projects on air-sensors. The SP30 sensor is a new kid on the block
+I have done a number of projects on air-sensors. The SPS30 sensor is a new kid on the block
 that looks interesting. This is the first draft version of a working driver + examples.
-More work to be done to create examples and compare against other sensors
+More work to be done to create examples and compare against other sensors.
 
 A word of warning: the SPS30 needs a female plug of ZHR-5 from JST Sales America Inc.
 I have not been able to find a good source for that and was glad to buy the Sparkfun version
@@ -35,7 +35,7 @@ Please see the description in the top of the sketch and read the documentation (
  * Added examples 4 (with DS18x20) and 5 (with BME280)
 
 ### version 1.1.0 / January 2019
- * Added examples 6
+ * Added examples 6 (plotting data)
  * Added ESP8266 support info
 
 ## Author
