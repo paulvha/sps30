@@ -34,6 +34,10 @@ Please see the description in the top of the sketch and read the documentation (
 ### version 1.0.1 / January 2019
  * Added examples 4 (with DS18x20) and 5 (with BME280)
 
+### version 1.1.0 / January 2019
+ * Added examples 6
+ * Added ESP8266 support info
+
 ## Author
 * Paul van Haastrecht (paulvha@hotmail.com)
 
