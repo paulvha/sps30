@@ -40,7 +40,6 @@
  *  Failed testing on UNO
  *  Had to use softserial as there is not a separate serialport. But as the SPS30 
  *  is only working on 115K the connection failed all the time with CRC errors.
- *  It also had low memory, despite the autodetection for LOWFOOTPRINT setting in SPS30.h
  *  
  *  Not tested ESP8266
  *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial, 
@@ -87,13 +86,17 @@
  *  3 SCL -------- A5 
  *  4 Select ----- GND  (select I2c)
  *  5 GND -------- GND 
- *     
+ *  
+ *  When UNO-board is detected the UART code is excluded as that 
+ *  does not work on UNO and will save memory. Also some buffers 
+ *  reduced and the call to GetErrDescription() is removed to allow 
+ *  enough memory.   
  *  ..........................................................
  *  Not tested ESP8266
  *    
  *  ================================= PARAMETERS =====================================
  *
- *  From line 121 there are configuration parameters for the program
+ *  From line 125 there are configuration parameters for the program
  *  
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
