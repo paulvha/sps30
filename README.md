@@ -26,11 +26,13 @@ Obtain the zip and install like any other
 ### Program options
 Please see the description in the top of the sketch and read the documentation (odt)
 
-
 ## Versioning
 
 ### version 1.0 / January 2019
- * Initial version Arduino, ESP32
+ * Initial version Arduino, ESP32, UNO
+
+### version 1.0.1 / January 2019
+ * Added examples 4 (with DS18x20) and 5 (with BME280)
 
 ## Author
 * Paul van Haastrecht (paulvha@hotmail.com)
