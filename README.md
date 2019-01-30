@@ -38,6 +38,11 @@ Please see the description in the top of the sketch and read the documentation (
  * Added examples 6 (plotting data)
  * Added ESP8266 support info
 
+### version 1.2  / January 2019
+ * added force serial1 when TX = RX = 8
+ * added flag INCLUDE_SOFTWARE_SERIAL to optionally exclude software Serial
+ * Tested by Ryan Brown on a Sparkfun Photon RED board and the code should also work with the Photon, P1, and Electrons
+
 ## Author
 * Paul van Haastrecht (paulvha@hotmail.com)
 
@@ -46,4 +51,5 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgements
 Make sure to read the datasheet from Sensirion. While draft and not 100% correct yet,
-it does provide good starting point.
+it does provide good starting point.<br>
+
