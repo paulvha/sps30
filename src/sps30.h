@@ -10,6 +10,7 @@
  * Development environment specifics:
  * Arduino IDE 1.9
  *
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -19,22 +20,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
- * Initial version by paulvha version 21 January 2019
+ * Version 1.0 / January 2019
+ * - Initial version by paulvha
  *
+ * Version 1.2 / January 2019
+ * - added force serial1 when TX = RX = 8
+ * - added flag  INCLUDE_SOFTWARE_SERIAL to exclude software Serial
  *********************************************************************
 */
 #ifndef SPS30_H
 #define SPS30_H
 
-#include "Arduino.h"                // Needed for Stream
-#include <SoftwareSerial.h>         // softserial
-#include "Wire.h"                   // for I2c
-#include "printf.h"
-
-
 /**
  * To EXCLUDE I2C communication, maybe for resource reasons,
- * comment out the line below. */
+ * comment out the line below.
+ */
 #define INCLUDE_I2C   1
 
 /**
@@ -43,13 +43,27 @@
  */
 #define INCLUDE_UART 1
 
+/**
+ * On some IDE / boards software Serial is not available
+ * comment out line below in that case
+ */
+#define INCLUDE_SOFTWARE_SERIAL 1
 
-/* Auto detect that some boards have low memory. (like Uno) */
+/**
+ *  Auto detect that some boards have low memory. (like Uno) */
 #if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__)
 #define SMALLFOOTPRINT 1
 #if defined INCLUDE_UART
 #undef INCLUDE_UART
 #endif //INCLUDE_UART
+#endif
+
+#include "Arduino.h"                // Needed for Stream
+#include "Wire.h"                   // for I2c
+#include "printf.h"
+
+#if defined INCLUDE_SOFTWARE_SERIAL
+#include <SoftwareSerial.h>         // softserial
 #endif
 
 /**

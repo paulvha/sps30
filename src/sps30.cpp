@@ -21,7 +21,15 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ **********************************************************************
+ * Version 1.0 / January 2019
+ * - Initial version by paulvha
  *
+ * Version 1.2 / January 2019
+ * - added force serial1 when TX = RX = 8
+ * - added flag  INCLUDE_SOFTWARE_SERIAL to exclude software Serial
+ *
+ *********************************************************************
  */
 
 #include "sps30.h"
@@ -575,6 +583,10 @@ uint32_t SPS30::byte_to_U32(int x)
  *
  * set the serial speed depending on the selected serialport.
  * as streams do not have .begin we had to use this workaround
+ *
+ * Return:
+ *  OK true
+ * Error false
  */
 bool SPS30::setSerialSpeed()
 {
@@ -621,15 +633,30 @@ bool SPS30::setSerialSpeed()
             _serial = &Serial2;
             break;
 #endif
+        default:
 
-        default:  // softserial
             if (Serial_RX == 0 || Serial_TX == 0){
                 if (_SPS30_Debug) printf("TX/RX line not defined\n");
                 return false;
             }
-            static SoftwareSerial swSerial(Serial_RX, Serial_TX);
-            swSerial.begin(_Serial_baud);
-            _serial = &swSerial;
+            // In case RX and TX are both pin 8, try Serial1 anyway.
+            // A way to force-enable Serial1 on some boards.
+            if (Serial_RX == 8 && Serial_TX == 8) {
+                Serial1.begin(_Serial_baud);
+                _serial = &Serial1;
+            }
+
+            else // try softserial
+            {
+#if defined(INCLUDE_SOFTWARE_SERIAL)
+                static SoftwareSerial swSerial(Serial_RX, Serial_TX);
+                swSerial.begin(_Serial_baud);
+                _serial = &swSerial;
+#else
+                if (_SPS30_Debug) printf("SoftWare Serial not enabled\n");
+                return(false);
+#endif
+            }
             break;
     }
 
