@@ -43,6 +43,11 @@ Please see the description in the top of the sketch and read the documentation (
  * added flag INCLUDE_SOFTWARE_SERIAL to optionally exclude software Serial
  * Tested by Ryan Brown on a Sparkfun Photon RED board and the code should also work with the Photon, P1, and Electrons
 
+### version 1.2.1 / February 2019
+ * Added examples 7 (with SCD)
+ * added flag in sps30.h SOFTI2C_ESP32 to use SoftWire on ESP32 in case of SCD30 and SPS30 working on I2C
+ * update documentation /instructions
+
 ## Author
 * Paul van Haastrecht (paulvha@hotmail.com)
 
