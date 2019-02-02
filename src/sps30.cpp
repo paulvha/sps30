@@ -29,6 +29,8 @@
  * - added force serial1 when TX = RX = 8
  * - added flag  INCLUDE_SOFTWARE_SERIAL to exclude software Serial
  *
+ * version 1.2.1 / February 2019
+ * - added flag in sps30.h SOFTI2C_ESP32 to use SoftWire on ESP32 in case of SCD30 and SPS30 working on I2C
  *********************************************************************
  */
 

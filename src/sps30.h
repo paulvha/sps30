@@ -26,6 +26,9 @@
  * Version 1.2 / January 2019
  * - added force serial1 when TX = RX = 8
  * - added flag  INCLUDE_SOFTWARE_SERIAL to exclude software Serial
+ *
+ * version 1.2.1 / February 2019
+ * - added flag in sps30.h SOFTI2C_ESP32 to use SoftWire on ESP32 in case of SCD30 and SPS30 working on I2C
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -50,22 +53,40 @@
 #define INCLUDE_SOFTWARE_SERIAL 1
 
 /**
+ * If the platform is an ESP32 AND it is planned to connect
+ * an SCD30, you have to remove the comments from the line below
+ *
+ * The standard I2C on an ESP32 does NOT support clock stretching
+ * which is needed for the SCD30. You must have SCD30 library downloaded
+ * from https://github.com/paulvha/scd30
+ */
+#define SOFTI2C_ESP32 1
+
+#include "Arduino.h"                // Needed for Stream
+#include "printf.h"
+
+/**
  *  Auto detect that some boards have low memory. (like Uno) */
 #if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__)
 #define SMALLFOOTPRINT 1
 #if defined INCLUDE_UART
 #undef INCLUDE_UART
 #endif //INCLUDE_UART
-#endif
+#endif // AVR definition check
 
-#include "Arduino.h"                // Needed for Stream
+#if defined INCLUDE_I2C
+#if defined SOFTI2C_ESP32
+#include <SoftWire/SoftWire.h>
+#else
 #include "Wire.h"                   // for I2c
-#include "printf.h"
+#endif // SOFTI2C_ESP32
+#endif // INCLUDE_I2C
 
+#if defined INCLUDE_UART
 #if defined INCLUDE_SOFTWARE_SERIAL
 #include <SoftwareSerial.h>         // softserial
-#endif
-
+#endif // INCLUDE_SOFTWARE_SERIAL
+#endif // INCLUDE_UART
 /**
  *  The communication it can be :
  *   I2C_COMMS              use I2C communication
