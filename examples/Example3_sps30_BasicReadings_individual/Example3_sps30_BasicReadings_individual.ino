@@ -1,6 +1,9 @@
 /************************************************************************************
  *  Copyright (c) January 2019, version 1.0     Paul van Haastrecht
  *
+ *  Version 1.1 Paul van Haastrecht
+ *  - Changed the I2C information / setup.
+ *
  *  =========================  Highlevel description ================================
  *
  *  In this invidual reading example you can select which data AND in which order you
@@ -50,8 +53,12 @@
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
  *  //////////////////////////////////////////////////////////////////////////////////
  *  NOTE 1:
- *  Using the I2C communication restricts the data that can be retrieved to concentration
- *  mass only. see detail document.
+ *  Depending on the Wire / I2C buffer size we might not be able to read all the values.
+ *  The buffer size needed is at least 60 while on many boards this is set to 32. The driver
+ *  will determine the buffer size and if less than 64 only the MASS values are returned.
+ *  You can manually edit the Wire.h of your board to increase (if you memory is larg enough)
+ *  One can check the expected number of bytes with the I2C_expect() call as in this example
+ *  see detail document.
  *
  *  NOTE 2:
  *  As documented in the datasheet, make sure to use external 10K pull-up resistor on
@@ -106,7 +113,7 @@
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 134 there are configuration parameters for the program
+ *  From line 141 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -172,8 +179,9 @@
     e.g dsp[SELECTSIZE] = {1,5,2,7,0} will display
     MassPM1, NumPM1, MassPM2, NumPM2
 
-    NOTE : With I2C communication, due to restriction,
-    ONLY the MassPMX info will be available. */
+    NOTE : With I2C communication , depending on the buffersize
+    in wire.h maybe ONLY the MassPMX info will be available.
+    See remarks in top of this sketch */
 ////////////////////////////////////////////////////////////
 #define SELECTSIZE 11
 uint8_t dsp[SELECTSIZE] = {1,5,2,7,0};
@@ -235,8 +243,9 @@ void setup() {
 
   serialTrigger("Hit <enter> to continue reading");
 
-  if ( SP30_COMMS == I2C_COMMS) {
-    Serial.println(F("!!! With I2C communication only the MASS concentration is available !!!\n"));
+  if (SP30_COMMS == I2C_COMMS) {
+    if (sps30.I2C_expect() == 4)
+      Serial.println(F(" !!! Due to I2C buffersize only the SPS30 MASS concentration is available !!! \n"));
   }
 }
 
