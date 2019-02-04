@@ -33,6 +33,7 @@ probe	KEYWORD2
 reset	KEYWORD2
 start	KEYWORD2
 stop	KEYWORD2
+I2C_expect	KEYWORD2
 GetErrDescription	KEYWORD2
 GetSerialNumber	KEYWORD2
 GetArticleCode	KEYWORD2

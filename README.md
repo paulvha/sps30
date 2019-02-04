@@ -45,8 +45,14 @@ Please see the description in the top of the sketch and read the documentation (
 
 ### version 1.2.1 / February 2019
  * Added examples 7 (with SCD)
- * added flag in sps30.h SOFTI2C_ESP32 to use SoftWire on ESP32 in case of SCD30 and SPS30 working on I2C
- * update documentation /instructions
+ * Added flag in sps30.h SOFTI2C_ESP32 to use SoftWire on ESP32 in case of SCD30 and SPS30 working on I2C
+ * Update documentation / instructions
+
+### version 1.3.0 / February 2019
+ * Added check on the I2C receive buffer. If at least 64 bytes it try to read ALL information else only MASS results
+ * Update examples / documentation / instructions
+ * Added examples 8 (SPS30 + SCD30 + BME280)
+ * Added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for boards with small footprint (thanks Just van den Broecke)
 
 ## Author
 * Paul van Haastrecht (paulvha@hotmail.com)
