@@ -31,6 +31,11 @@
  *
  * version 1.2.1 / February 2019
  * - added flag in sps30.h SOFTI2C_ESP32 to use SoftWire on ESP32 in case of SCD30 and SPS30 working on I2C
+ *
+ * version 1.3.0 / February 2019
+ * - added check on the I2C buffer. If at least 64 bytes it try to read ALL information else only MASS results
+ * - added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for small footprint
+ *
  *********************************************************************
  */
 
@@ -68,6 +73,11 @@ SPS30::SPS30(void)
   _Sensor_Comms = NONE;
   _started = false;
   memset(Reported,0x1,sizeof(Reported));     // Trigger reading single value cache
+
+#if defined INCLUDE_I2C                      // added with version 1.3.0
+  if (I2C_LENGTH >= 64)  I2C_Max_bytes = 40; // total length
+  else I2C_Max_bytes = 20;                   // only Mass
+#endif
 }
 
 /**
@@ -216,7 +226,6 @@ bool SPS30::Instruct(uint8_t type)
 
         return(true);
     }
-
     return(false);
 }
 
@@ -482,8 +491,11 @@ uint8_t SPS30::GetValues(struct sps_values *v)
             if (I2C_Check_data_ready())
             {
                 I2C_fill_buffer(I2C_READ_MEASURED_VALUE);
-                // I2C will only provide 22 valid data bytes
-                ret = I2C_SetPointer_Read(20);
+
+                // I2C will provide maximum data bytes depending on
+                // the I2C read_buffer.
+
+                ret = I2C_SetPointer_Read(I2C_Max_bytes);
                 break;
             }
             else
@@ -527,9 +539,9 @@ uint8_t SPS30::GetValues(struct sps_values *v)
     v->MassPM4 = byte_to_float(offset + 8);
     v->MassPM10 = byte_to_float(offset + 12);
 
-    // I2C will only provide 22 valid data bytes
-    // so only providing MASS info
-    if (_Sensor_Comms != I2C_COMMS){
+    // I2C will only provide valid data bytes depending on I2C buffer
+    // if I2C buffer is less than 64 it only providing MASS info (set in constructor)
+    if (I2C_Max_bytes > 20) {
         v->NumPM0 = byte_to_float(offset + 16);
         v->NumPM1 = byte_to_float(offset + 20);
         v->NumPM2 = byte_to_float(offset + 24);
@@ -974,6 +986,21 @@ uint8_t SPS30::SerialToBuffer()
  * I2C routines
  *************************************************************/
 #if defined INCLUDE_I2C
+
+/**
+ * @brief : Return the expected number of valid values read from device
+ *
+ * The I2C_Max_bytes is depending on the buffer defined in Wire.h
+ *
+ * Return
+ *  4 = Valid Mass values only
+ * 10 = All values are expected to be valid
+ */
+uint8_t SPS30::I2C_expect()
+{
+    if (I2C_Max_bytes == 20) return(4);
+    return(10);
+}
 
 /**
  * @brief : Start I2C communication

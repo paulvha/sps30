@@ -20,15 +20,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
- * Version 1.0 / January 2019
+ * Version 1.0   / January 2019
  * - Initial version by paulvha
  *
- * Version 1.2 / January 2019
+ * Version 1.2   / January 2019
  * - added force serial1 when TX = RX = 8
  * - added flag  INCLUDE_SOFTWARE_SERIAL to exclude software Serial
  *
  * version 1.2.1 / February 2019
  * - added flag in sps30.h SOFTI2C_ESP32 to use SoftWire on ESP32 in case of SCD30 and SPS30 working on I2C
+ *
+ * version 1.3.0 / February 2019
+ * - added check on the I2C receive buffer. If at least 64 bytes it try to read ALL information else only MASS results
+ * - added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for small footprint
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -43,50 +47,87 @@
 /**
  * To EXCLUDE the serial communication, maybe for resource reasons
  * as you board does not have a seperate serial, comment out the line below
+ * It will also exclude Software_serial
  */
 #define INCLUDE_UART 1
 
 /**
  * On some IDE / boards software Serial is not available
  * comment out line below in that case
+ *
  */
 #define INCLUDE_SOFTWARE_SERIAL 1
 
 /**
- * If the platform is an ESP32 AND it is planned to connect
- * an SCD30, you have to remove the comments from the line below
+ * If the platform is an ESP32 AND it is planned to connect an SCD30,
+ * you have to remove the comments from the line below
  *
  * The standard I2C on an ESP32 does NOT support clock stretching
  * which is needed for the SCD30. You must have SCD30 library downloaded
- * from https://github.com/paulvha/scd30
+ * from https://github.com/paulvha/scd30 and included in your sketch
+ * (see examples)
+ *
+ * If you do not plan the SPS30 to run on I2C you can exclude the I2C in total
  */
-#define SOFTI2C_ESP32 1
+//#define SOFTI2C_ESP32 1
 
 #include "Arduino.h"                // Needed for Stream
 #include "printf.h"
 
 /**
- *  Auto detect that some boards have low memory. (like Uno) */
-#if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__)
-#define SMALLFOOTPRINT 1
-#if defined INCLUDE_UART
-#undef INCLUDE_UART
-#endif //INCLUDE_UART
+ *  Auto detect that some boards have low memory. (like Uno)
+ */
+#if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__)
+    #define SMALLFOOTPRINT 1
+
+    #if defined INCLUDE_UART
+        #undef INCLUDE_UART
+    #endif //INCLUDE_UART
+
 #endif // AVR definition check
 
 #if defined INCLUDE_I2C
-#if defined SOFTI2C_ESP32
-#include <SoftWire/SoftWire.h>
-#else
-#include "Wire.h"                   // for I2c
-#endif // SOFTI2C_ESP32
+
+    #if defined SOFTI2C_ESP32       // in case of SCD30
+        #include <SoftWire/SoftWire.h>
+    #else
+        #include "Wire.h"           // for I2c
+    #endif                          // SOFTI2C_ESP32
+
+    /* Version 1.3.0
+     *
+     * The read results is depending on the Wire / I2c buffer size, defined in Wire.h.
+     *
+     * The buffer size needed for each float value is 6 (LSB + MSB + CRC ++++ LSB + MSB + CRC)
+     * To read all values an I2C buffer of atleast 6 x 10 = 60 bytes is needed
+     * On many boards the default buffer size is set to 32 in Wire.h, thus providing 5 valid float values.
+     * You can increase (if memory size allows) that yourself in Wire.h
+     *
+     * Here we determine the buffersize and the calculation is done in the constructor for sps30
+     * IF the buffer size is less than 64 only the MASS values are provided. This is for I2C only!!
+     *
+     * From a sketch you can check the impact by calling I2C_expect(), which will return the number of valid float values.
+     */
+    #define I2C_LENGTH 32
+
+    #if defined BUFFER_LENGTH           // Arduino  & ESP8266 & Softwire
+        #undef  I2C_LENGTH
+        #define I2C_LENGTH  BUFFER_LENGTH
+    #endif
+
+    #if defined I2C_BUFFER_LENGTH       // ESP32
+        #undef  I2C_LENGTH
+        #define I2C_LENGTH  I2C_BUFFER_LENGTH
+    #endif
+
 #endif // INCLUDE_I2C
 
 #if defined INCLUDE_UART
-#if defined INCLUDE_SOFTWARE_SERIAL
-#include <SoftwareSerial.h>         // softserial
-#endif // INCLUDE_SOFTWARE_SERIAL
+    #if defined INCLUDE_SOFTWARE_SERIAL
+        #include <SoftwareSerial.h>         // softserial
+    #endif // INCLUDE_SOFTWARE_SERIAL
 #endif // INCLUDE_UART
+
 /**
  *  The communication it can be :
  *   I2C_COMMS              use I2C communication
@@ -166,11 +207,12 @@ typedef struct Description {
     char    desc[80];
 };
 
-/* Receive buffer length*/
+/* Receive buffer length. Expected is 40 bytes max
+ * but you never know in the future.. */
 #if defined SMALLFOOTPRINT
-#define MAXRECVBUFLENGTH 100         // for light boards
+#define MAXRECVBUFLENGTH 50         // for light boards
 #else
-#define MAXRECVBUFLENGTH 255
+#define MAXRECVBUFLENGTH 128
 #endif
 
 /*************************************************************/
@@ -218,6 +260,8 @@ class SPS30
 
     /**
      * @brief : set RX and TX pin for softserial and Serial1 on ESP32
+     * Setting both to 8 (tx=rx=8) will force a Serial1 communication
+     * on any device (assuming the pins are hard coded)
      */
     void SetSerialPin(uint8_t rx, uint8_t tx);
 
@@ -284,6 +328,19 @@ class SPS30
     float GetNumPM10()  {return(Get_Single_Value(v_NumPM10));}
     float GetPartSize() {return(Get_Single_Value(v_PartSize));}
 
+#if defined INCLUDE_I2C
+    /**
+     * @brief : Return the expected number of valid values read from device
+     *
+     * This is depending on the buffer defined in Wire.h
+     *
+     * Return
+     *  4 = Valid Mass values only
+     * 10 = All values are expected to be valid
+     */
+    uint8_t I2C_expect();
+#endif
+
   private:
 
     /** shared variables */
@@ -330,6 +387,7 @@ class SPS30
     uint8_t I2C_SetPointer();
     bool I2C_Check_data_ready();
     uint8_t I2C_calc_CRC(uint8_t data[2]);
+    uint8_t I2C_Max_bytes;
 #endif // INCLUDE_I2C
 
 };
