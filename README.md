@@ -61,6 +61,5 @@ Please see the description in the top of the sketch and read the documentation (
 This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgements
-Make sure to read the datasheet from Sensirion. While draft and not 100% correct yet,
-it does provide good starting point.<br>
+Make sure to read the datasheet from Sensirion. While draft it does provide good starting point.<br>
 
