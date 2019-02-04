@@ -1,10 +1,12 @@
 /************************************************************************************
  *  Copyright (c) February 2019, version 1.0     Paul van Haastrecht
  *
+ *  Version 1.1 Paul van Haastrecht
+ *  - Changed the I2C information / setup.
  *  =========================  Highlevel description ================================
  *
- *  This basic reading example sketch will connect to an SPS30 and SCD30 for getting data and
- *  display the available data. 
+ *  This basic reading example sketch will connect to an SPS30 and SCD30 for
+ *  getting data and display the available data.
  *
  *  =========================  Hardware connections =================================
  *  /////////////////////////////////////////////////////////////////////////////////
@@ -49,8 +51,12 @@
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
  *  //////////////////////////////////////////////////////////////////////////////////
  *  NOTE 1:
- *  Using the I2C communication restricts the data that can be retrieved to concentration
- *  mass only. see detail document.
+ *  Depending on the Wire / I2C buffer size we might not be able to read all the values.
+ *  The buffer size needed is at least 60 while on many boards this is set to 32. The driver
+ *  will determine the buffer size and if less than 64 only the MASS values are returned.
+ *  You can manually edit the Wire.h of your board to increase (if you memory is larg enough)
+ *  One can check the expected number of bytes with the I2C_expect() call as in this example
+ *  see detail document.
  *
  *  NOTE 2:
  *  As documented in the datasheet, make sure to use external 10K pull-up resistor on
@@ -105,7 +111,7 @@
  *
  *  ===============  SCD30 sensor =========================
  *
- *  SCD30 
+ *  SCD30
  *  1 VDD  --------- VCC ( 3V3 or 5V)
  *  2 GND  --------- GND
  *  3 TX/SCL ------- SCL
@@ -113,21 +119,21 @@
  *  5 RDY    ------- NOT CONNECTED
  *  6 PWM    ------- NOT CONNECTED
  *  7 SEL    ------- NOT CONNECTED
- * 
- * ONLY NEEDED for an ESP32.
+ *
+ * !!! ONLY NEEDED for an ESP32.
  * Given that SCD30 is using clock stretching the driver has been modified to deal with that.
  * A SoftWire library is included in the SCD30 (February 2019) for the ESP32
- * 
- * In case a sketch is to interact with both SPS30 and SCD30 on a ESP32 platform running BOTH over I2C, 
- * you MUST use the SoftWire I2C that is part of SCD30. 
- * For that you need to un-comment in sps30.h the line:  //#define SOFTI2C_ESP32 1 
- * 
- * In case you do not plan to use the I2C code for the SPS30 you could instead in sps30.h 
+ *
+ * In case a sketch is to interact with both SPS30 and SCD30 on a ESP32 platform running BOTH over I2C,
+ * you MUST use the SoftWire I2C that is part of SCD30.
+ * For that you need to un-comment in sps30.h the line:  //#define SOFTI2C_ESP32 1
+ *
+ * In case you do not plan to use the I2C code for the SPS30 you could instead in sps30.h
  * comment out the line : #define INCLUDE_I2C   1. (also saves memory)
- * 
+ *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 157 there are configuration parameters for the program
+ *  From line 162 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -137,7 +143,7 @@
  *      - The serial monitor is NOT active (will cause upload errors)
  *      - Press GPIO 0 switch during connecting after compile to start upload to the board
  *
- *  !!!! Sparkfun SCD30 library:  https://github.com/paulvha/scd30
+ *   SCD30 library:  https://github.com/paulvha/scd30
  *
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -151,7 +157,7 @@
  *
  *  NO support, delivered as is, have fun, good luck !!
  */
- 
+
 #include "paulvha_SCD30.h"
 #include "sps30.h"
 
@@ -167,7 +173,7 @@
 
  * NOTE: Softserial has been left in as an option, but as the SPS30 is only
  * working on 115K the connection will probably NOT work on any device.
- * ALSO you should NOT comment out in sps30.h #define INCLUDE_SOFTWARE_SERIAL 1*/
+ */
 /////////////////////////////////////////////////////////////
 #define SP30_COMMS SERIALPORT1
 
@@ -198,14 +204,14 @@
 
 // create constructors
 SPS30 sps30;
-SCD30 airSensor; 
+SCD30 airSensor;
 
 // status
 bool SCD30_detected = false;
 
 void setup() {
   char buf[30];
-  
+
   Serial.begin(115200);
 
   serialTrigger("SPS30-Example7: Basic reading + SCD30. press <enter> to start");
@@ -224,7 +230,7 @@ void setup() {
   }
 
   // check for SPS30 connection
-  if (sps30.probe() == false) 
+  if (sps30.probe() == false)
     Errorloop("could not probe / connect with SPS30", 0);
   else
     Serial.println(F("Detected SPS30"));
@@ -239,29 +245,29 @@ void setup() {
 
   // set SCD30
   airSensor.setDebug(DEBUG);
-  
+
   // This will init the wire, but NOT start reading
   if (airSensor.begin(Wire,false) == false)
     Serial.println(F("cound not start SCD30"));
   else
   {
-    Serial.println(F("SCD30 found"));
-    
+    Serial.println(F("Detected SCD30"));
+
     if (airSensor.getSerialNumber(buf))
     {
-      Serial.print(F("\tSerial number: "));
+      Serial.print(F("\tSerial number : "));
       Serial.println(buf);
     }
     else
       Serial.println(F("could not read serial number"));
   }
-  
+
   // This will cause readings to occur every two seconds
   if (airSensor.begin() == false)
     Serial.println(F("cound not start SCD30"));
   else
     SCD30_detected = true;
- 
+
   // start measurement
   if (sps30.start() == true)
     Serial.println(F("Measurement started"));
@@ -271,7 +277,8 @@ void setup() {
   serialTrigger("Hit <enter> to continue reading");
 
   if (SP30_COMMS == I2C_COMMS) {
-    Serial.println(F(" !!! With I2C communication only the SPS30 MASS concentration is available !!! \n"));
+    if (sps30.I2C_expect() == 4)
+      Serial.println(F(" !!! Due to I2C buffersize only the SPS30 MASS concentration is available !!! \n"));
   }
 }
 
