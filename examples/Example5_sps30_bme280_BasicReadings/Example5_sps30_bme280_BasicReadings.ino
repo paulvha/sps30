@@ -1,10 +1,13 @@
 /************************************************************************************
  *  Copyright (c) January 2019, version 1.0     Paul van Haastrecht
  *
+ *  Version 1.1 Paul van Haastrecht
+ *  - Changed the I2C information / setup.
+ *
  *  =========================  Highlevel description ================================
  *
- *  This basic reading example sketch will connect to an SPS-30 for getting data and
- *  display the available data. It will also try to find an BME280
+ *  This basic reading example sketch will connect to an SPS-30 and a BME280 for
+ *  getting data and display the available data.
  *
  *  =========================  Hardware connections =================================
  *  /////////////////////////////////////////////////////////////////////////////////
@@ -49,8 +52,12 @@
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
  *  //////////////////////////////////////////////////////////////////////////////////
  *  NOTE 1:
- *  Using the I2C communication restricts the data that can be retrieved to concentration
- *  mass only. see detail document.
+ *  Depending on the Wire / I2C buffer size we might not be able to read all the values.
+ *  The buffer size needed is at least 60 while on many boards this is set to 32. The driver
+ *  will determine the buffer size and if less than 64 only the MASS values are returned.
+ *  You can manually edit the Wire.h of your board to increase (if you memory is larg enough)
+ *  One can check the expected number of bytes with the I2C_expect() call as in this example
+ *  see detail document.
  *
  *  NOTE 2:
  *  As documented in the datasheet, make sure to use external 10K pull-up resistor on
@@ -112,7 +119,7 @@
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 144 there are configuration parameters for the program
+ *  From line 149 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -122,7 +129,7 @@
  *      - The serial monitor is NOT active (will cause upload errors)
  *      - Press GPIO 0 switch during connecting after compile to start upload to the board
  *
- *  Sparkfun BME280 library :https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
+ *  Sparkfun BME280 library : https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
  *
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -252,7 +259,8 @@ void setup() {
   serialTrigger("Hit <enter> to continue reading");
 
   if (SP30_COMMS == I2C_COMMS) {
-    Serial.println(F(" !!! With I2C communication only the SPS30 MASS concentration is available !!! \n"));
+    if (sps30.I2C_expect() == 4)
+      Serial.println(F(" !!! Due to I2C buffersize only the SPS30 MASS concentration is available !!! \n"));
   }
 }
 
