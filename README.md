@@ -54,6 +54,9 @@ Please see the description in the top of the sketch and read the documentation (
  * Added example 8 (SPS30 + SCD30 + BME280)
  * Added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for boards with small footprint (thanks Just van den Broecke)
 
+### Version 1.3.1 / February 2019
+ * fixed the PM10 number always showing 0 issue.
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
