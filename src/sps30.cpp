@@ -36,6 +36,8 @@
  * - added check on the I2C buffer. If at least 64 bytes it try to read ALL information else only MASS results
  * - added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for small footprint
  *
+ * Version 1.3.1 / February 2019
+ * - fixed the PM10 always showing 0 issue.
  *********************************************************************
  */
 
@@ -546,7 +548,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
         v->NumPM1 = byte_to_float(offset + 20);
         v->NumPM2 = byte_to_float(offset + 24);
         v->NumPM4 = byte_to_float(offset + 28);
-        v->NumPM0 = byte_to_float(offset + 32);
+        v->NumPM10 = byte_to_float(offset + 32);
         v->PartSize = byte_to_float(offset + 36);
     }
     return(ERR_OK);
