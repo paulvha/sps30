@@ -170,6 +170,13 @@
 /////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
 
+// function prototypes (sometimes the pre-processor does not create prototypes themself on ESPxx)
+void serialTrigger(char * mess);
+void ErrtoMess(char *mess, uint8_t r);
+void Errorloop(char *mess, uint8_t r);
+void GetDeviceInfo();
+bool read_all();
+
 // create constructor
 SPS30 sps30;
 

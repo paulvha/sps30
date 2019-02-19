@@ -1,13 +1,24 @@
 /************************************************************************************
- *  Copyright (c) January 2019, version 1.0     Paul van Haastrecht
+ *  Copyright (c) february 2019, version 1.0     Paul van Haastrecht
  *
- *  Version 1.1 Paul van Haastrecht
- *  - Changed the I2C information / setup.
  *
  *  =========================  Highlevel description ================================
  *
- *  In this invidual reading example you can select which data AND in which order you
- *  want the data to be displayed.
+ *  This basic reading example sketch will connect to an SPS30 for getting data and
+ *  display the available data. It will calculate the average particle and compare to
+ *  the reported typical to calculates the error margin. It will show the actual
+ *  error margin as well as a running average based on the last INCLUDE_ERRORCALC definition
+ *
+ *  An answer on the typical size from Sensirion:
+ *
+ *  The typical particle size (TPS) is not a function of the other SPS30 outputs,
+ *  but an independent output. It gives an indication on the average particle diameter
+ *  in the sample aerosol. Such output correlates with the weighted average of the number
+ *  concentration bins measured with a TSI 3330 optical particle sizer.
+ *  Following this definition, lighter aerosols will have smaller TPS values than heavier aerosols.
+ *  The reactiveness of this output increases with the particle statistics: a larger number of
+ *  particles in the environment will generate more rapidly meaningful
+ *  TPS values than a smaller number of particles (i.e., clean air).
  *
  *  =========================  Hardware connections =================================
  *  /////////////////////////////////////////////////////////////////////////////////
@@ -43,11 +54,9 @@
  *  Failed testing on UNO
  *  Had to use softserial as there is not a separate serialport. But as the SPS30
  *  is only working on 115K the connection failed all the time with CRC errors.
- *  It also had low memory, despite the autodetection for LOWFOOTPRINT setting in SPS30.h
  *
  *  Not tested ESP8266
- *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial,
- *  I have not tested this.
+ *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial
  *
  *  //////////////////////////////////////////////////////////////////////////////////
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
@@ -74,7 +83,7 @@
  *  4 Select ----- GND (select I2c)
  *  5 GND -------- GND
  *
- * The pull-up resistors should be to 3V3
+ *  The pull-up resistors should be to 3V3
  *  ..........................................................
  *  Successfully tested on ATMEGA2560
  *
@@ -113,7 +122,7 @@
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 141 there are configuration parameters for the program
+ *  From line 151 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -142,14 +151,14 @@
 /*define communication channel to use for SPS30
  valid options:
  *   I2C_COMMS              use I2C communication
- *   SOFTWARE_SERIAL        Arduino variants and ESP8266 (NOTE)
+ *   SOFTWARE_SERIAL        Arduino variants (NOTE)
  *   SERIALPORT             ONLY IF there is NO monitor attached
  *   SERIALPORT1            Arduino MEGA2560, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
  *   SERIALPORT2            Arduino MEGA2560 and ESP32
  *   SERIALPORT3            Arduino MEGA2560 only for now
 
  * NOTE: Softserial has been left in as an option, but as the SPS30 is only
- * working on 115K the connection will probably NOT work on any device.*/
+ * working on 115K the connection will probably NOT work on any device. */
 /////////////////////////////////////////////////////////////
 #define SP30_COMMS SERIALPORT1
 
@@ -161,32 +170,6 @@
 #define RX_PIN 25
 
 /////////////////////////////////////////////////////////////
-/* determine order of data to display
-    MassPM1     1
-    MassPM2     2
-    MassPM4     3
-    MassPM10    4
-    NumPM0      5
-    NumPM1      6
-    NumPM2      7
-    NumPM4      8
-    NumPM10     9
-    PartSize    10
-    Terminate   0
-
-    Set the number of the selected data in the wanted order
-    you want it to display and null terminate
-    e.g dsp[SELECTSIZE] = {1,5,2,7,0} will display
-    MassPM1, NumPM1, MassPM2, NumPM2
-
-    NOTE : With I2C communication , depending on the buffersize
-    in wire.h maybe ONLY the MassPMX info will be available.
-    See remarks in top of this sketch */
-////////////////////////////////////////////////////////////
-#define SELECTSIZE 11
-uint8_t dsp[SELECTSIZE] = {1,5,2,7,0};
-
-/////////////////////////////////////////////////////////////
 /* define driver debug
  * 0 : no messages
  * 1 : request sending and receiving
@@ -194,9 +177,27 @@ uint8_t dsp[SELECTSIZE] = {1,5,2,7,0};
  //////////////////////////////////////////////////////////////
 #define DEBUG 0
 
+/////////////////////////////////////////////////////////////
+/* define the maximum of the last measured values to include
+ * as part of an running error margin calculation
+ */
+ //////////////////////////////////////////////////////////////
+#define INCLUDE_ERRORCALC 10
+
 ///////////////////////////////////////////////////////////////
 /////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
+
+// create constructor
+SPS30 sps30;
+
+// for typical/average error margin
+typedef struct comp {
+  float typical;
+  float avg;
+};
+
+struct comp compta[INCLUDE_ERRORCALC+1];
 
 // function prototypes (sometimes the pre-processor does not create prototypes themself on ESPxx)
 void serialTrigger(char * mess);
@@ -204,15 +205,15 @@ void ErrtoMess(char *mess, uint8_t r);
 void Errorloop(char *mess, uint8_t r);
 void GetDeviceInfo();
 bool read_all();
-
-// create constructor
-SPS30 sps30;
+double calc_avg(struct sps_values v);
+double error_margin(struct sps_values v, double avg);
+void print_aligned(double val, signed char width, unsigned char prec);
 
 void setup() {
 
   Serial.begin(115200);
 
-  serialTrigger("SPS30-Example3: Basic reading individual. press <enter> to start");
+  serialTrigger("SPS30-Example9: Read values, calculate average size and error margin.  Press <enter> to start");
 
   Serial.println(F("Trying to connect"));
 
@@ -229,10 +230,10 @@ void setup() {
 
   // check for SPS30 connection
   if (sps30.probe() == false) {
-    Errorloop("could not probe / connect with SPS30", 0);
+    Errorloop("could not probe / connect with SPS30.", 0);
   }
   else
-    Serial.println(F("Detected SPS30"));
+    Serial.println(F("Detected SPS30."));
 
   // reset SPS30 connection
   if (sps30.reset() == false) {
@@ -258,11 +259,11 @@ void setup() {
 
 void loop() {
   read_all();
-  delay(3000);
+  delay(5000);
 }
 
 /**
- * @brief: read and display device info
+ * @brief : read and display device info
  */
 void GetDeviceInfo()
 {
@@ -277,11 +278,11 @@ void GetDeviceInfo()
     else Serial.println(F("not available"));
   }
   else
-    ErrtoMess("could not get serial number SPS30.", ret);
+    ErrtoMess("could not get serial number", ret);
 
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
-  if (ret == ERR_OK) {
+  if (ret == ERR_OK)  {
     Serial.print(F("Product name  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
@@ -292,7 +293,7 @@ void GetDeviceInfo()
 
   // try to get article code
   ret = sps30.GetArticleCode(buf, 32);
-  if (ret == ERR_OK) {
+  if (ret == ERR_OK)  {
     Serial.print(F("Article code  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
@@ -303,7 +304,24 @@ void GetDeviceInfo()
 }
 
 /**
- * @brief: read and display all values
+ * @brief will print nice aligned columns
+ *
+ * @param val : value to print
+ * @param width : total width of value including decimal point
+ * @param prec : precision after the decimal point
+ */
+void print_aligned(double val, signed char width, unsigned char prec)
+{
+  char out[15];
+
+  dtostrf(val, width, prec, out);
+  Serial.print(out);
+  Serial.print(F("\t  "));
+}
+
+/**
+ * @brief : read and display all values
+ *
  */
 bool read_all()
 {
@@ -311,109 +329,192 @@ bool read_all()
   uint8_t ret, error_cnt = 0;
   struct sps_values val;
 
-  // print header first
-  if (header)
-  {
-    for(byte i=0; i< SELECTSIZE; i++){
+  // loop to get data
+  do {
 
-      switch(dsp[i]) {
-        case 0:
-            Serial.print(F("\n"));
-            i = SELECTSIZE;
-            break;
-        case v_MassPM1:
-            Serial.print(F("MassPM1\t"));
-            break;
-        case v_MassPM2:
-            Serial.print(F("MassPM2\t"));
-            break;
-        case v_MassPM4:
-            Serial.print(F("MassPM4\t"));
-            break;
-        case v_MassPM10:
-            Serial.print(F("MassPM10\t"));
-            break;
-         case v_NumPM0:
-            Serial.print(F("NumPM0\t"));
-            break;
-        case v_NumPM1:
-            Serial.print(F("NumPM1\t"));
-            break;
-        case v_NumPM2:
-            Serial.print(F("NumPM2\t"));
-            break;
-        case v_NumPM4:
-            Serial.print(F("NumPM4\t"));
-            break;
-        case v_NumPM10:
-            Serial.print(F("NumPM10\t"));
-            break;
-        case v_PartSize:
-            Serial.print(F("Prtsize\t"));
-            break;
-      }
+    ret = sps30.GetValues(&val);
+
+    // data might not have been ready or value is 0 (can happen at start)
+    if (ret == ERR_DATALENGTH || val.MassPM1 == 0 ) {
+
+        if (error_cnt++ > 3) {
+          ErrtoMess("Error during reading values: ",ret);
+          return(false);
+        }
+        delay(1000);
     }
 
+    // if other error
+    else if(ret != ERR_OK) {
+      ErrtoMess("Error during reading values: ",ret);
+      return(false);
+    }
+
+  } while (ret != ERR_OK);
+
+  // only print header first time
+  if (header) {
+    Serial.println(F("----------------------------Mass -----------------------------    -------------------------------- Number ---------------------------------      -------Partsize --------         ----- Error Margin -----"));
+    Serial.println(F("                     Concentration [μg/m3]                                                 Concentration [#/cm3]                                           [μm]                          % "));
+    Serial.print(F(" PM1.0             PM2.5           PM4.0           PM10             PM0.5           PM1.0           PM2.5           PM4.0           PM10          Typical         Average         Actual    last "));
+    Serial.print(INCLUDE_ERRORCALC);
+    Serial.println(F(" samples\n"));
     header = false;
+
+    // often seen the first reading to be "out of bounds". so we skip it
+    return(true);
   }
 
-  // get values
-  for(byte i=0; i< SELECTSIZE; i++) {
+  print_aligned((double) val.MassPM1, 8, 5);
+  print_aligned((double) val.MassPM2, 8, 5);
+  print_aligned((double) val.MassPM4, 8, 5);
+  print_aligned((double) val.MassPM10, 8, 5);
+  print_aligned((double) val.NumPM0, 9, 5);
+  print_aligned((double) val.NumPM1, 9, 5);
+  print_aligned((double) val.NumPM2, 9, 5);
+  print_aligned((double) val.NumPM4, 9, 5);
+  print_aligned((double) val.NumPM10, 9, 5);
+  print_aligned((double) val.PartSize, 7, 5);
 
-    switch(dsp[i]) {
-      case 0:
-          Serial.print(F("\n"));
-          return(true);
-          break;
-      case v_MassPM1:
-          Serial.print(sps30.GetMassPM1());
-          Serial.print(F("\t"));
-          break;
-      case v_MassPM2:
-          Serial.print(sps30.GetMassPM2());
-          Serial.print(F("\t"));
-          break;
-      case v_MassPM4:
-          Serial.print(sps30.GetMassPM4());
-          Serial.print(F("\t"));
-          break;
-      case v_MassPM10:
-          Serial.print(sps30.GetMassPM10());
-          Serial.print(F("\t"));
-          break;
-       case v_NumPM0:
-          Serial.print(sps30.GetNumPM0());
-          Serial.print(F("\t"));
-          break;
-      case v_NumPM1:
-          Serial.print(sps30.GetNumPM1());
-          Serial.print(F("\t"));
-          break;
-      case v_NumPM2:
-          Serial.print(sps30.GetNumPM2());
-          Serial.print(F("\t"));
-          break;
-      case v_NumPM4:
-          Serial.print(sps30.GetNumPM4());
-          Serial.print(F("\t"));
-          break;
-      case v_NumPM10:
-          Serial.print(sps30.GetNumPM10());
-          Serial.print(F("\t"));
-          break;
-      case v_PartSize:
-          Serial.print(sps30.GetPartSize());
-          Serial.print(F("\t"));
-          break;
+  double tmp = calc_avg(val);
+  print_aligned(tmp, 7, 5);
+
+  // calculated actual Error Margin
+  print_aligned((((double)val.PartSize - tmp) / (double)val.PartSize) * 100, 6, 2);
+
+  tmp = error_margin(val, tmp)* 100;
+  print_aligned(tmp, 6, 2);
+
+  Serial.print(F("\n"));
+
+  return(true);
+}
+
+
+/**
+ * According to the datasheet: PMx defines particles with a size smaller than “x” micrometers (e.g., PM2.5 = particles smaller than 2.5 μm).
+ *
+ *assume :  PM0.5   PM1    PM2.5  PM4    PM10       Typical size
+ *          30.75 / 35.2 / 35.4 / 35.4 / 35.4 #/cm³ -> 0.54μm
+ *
+ * That means (taking the samples mentioned above):
+ * 30.75 have a size up to 0.5 um               >> avg. size impact = 30.75 * 0.499
+ * 35.2 - 30.75 have a size between 0.5 and 1   >> avg. size impact = (35.2 - 30.75) * 0.99
+ * 35.4 - 35.2 have a size between 1 and 2.5um >> etc
+ *
+ * Add the avg. size impact values ( 20.325) and divide by total = PM10 = 35.4) gives a calculated avg size of 0.57.
+ *
+ * PM0.5  PM1   PM2.5   PM4   PM10  avg size
+ * 30.75   35.2  35.4  35.4  35.4  0.54
+ * 0.499   0.99  2.49  3.99  9.99
+ * 15.345  4.40  0.498    0    0   20.247
+ *
+ *                   Calculated average : 0.5719
+ *
+ * It is not a 100% fit. Maybe they apply different multiplier for size impact, maybe have more information in the sensor than exposed,
+ * maybe include a number of the previous measurements in the calculations to prevent the number jump up and down too much
+ * between the snap-shots.
+
+ * I had a sketch running for 175 samples, sample every 3 seconds
+ * The average for the 175 typical size was : 0,575451860465117 um
+ * The average for 175 calculated avg was : 0,583083779069767 um,
+ * Thus a delta of 0,007631918604651 over 175 samples. The error margin of 1.33%. I can live with that.
+ *
+ * One suprising aspect is when float's were used to calculate often 0.57620 is the outcome... When checking the values and calculations
+ * with a spreadsheet, there was a mismatch in the result . (error with float measurement ?)
+ *
+ * Hence the double values are applied.
+ *
+ */
+double calc_avg(struct sps_values v)
+{
+  double a,b;
+
+  a = (double) v.NumPM0 * (double) 0.499;
+  /*Serial.print(F("\n a: "));
+  Serial.print(a);
+  Serial.print(F("\t a: "));
+*/
+  b = (double) (v.NumPM1  - v.NumPM0);
+  a += b * (double) 0.99;
+  /*Serial.print(a);
+  Serial.print(F("\t b "));
+  Serial.print(b);
+  Serial.print(F("\t a "));
+*/
+  b = (double) (v.NumPM2  - v.NumPM1);
+  a += b * (double) 2.49;
+  /*Serial.print(a);
+  Serial.print(F("\t b "));
+  Serial.print(b);
+  Serial.print(F("\t a "));;
+  */
+  b = (double) (v.NumPM4  - v.NumPM2);
+  a += b * (double) 3.99;
+  /*Serial.print(a);
+  Serial.print(F("\t b "));
+  Serial.print(b);
+  Serial.print(F("\t a "));
+*/
+  b = (double) (v.NumPM10  - v.NumPM4);
+  a += b * (double) 9.99;
+  /*Serial.print(a);
+  Serial.print(F("\t b "));
+  Serial.print(b);
+  Serial.print(F("\t a "));
+
+  Serial.print(a);
+  Serial.print(F("\t b "));
+  Serial.print(b);
+  Serial.print(F("\n"));
+  */
+  return(a / (double) v.NumPM10);
+}
+
+/**
+ * @brief : calculate error margin based X amount of samples
+ * @param v: current read measurement
+ * @param avg : current calculated average
+ *
+ * return : running error margin
+ */
+double error_margin(struct sps_values v, double avg)
+{
+  static uint8_t loaded = 0;    // number of loaded values
+  uint8_t i;
+  double  error = 0, tot_t = 0;
+
+  // if loaded history is full
+  if (loaded == INCLUDE_ERRORCALC)
+  {
+    // shift out oldest
+    for(i = 0 ; i < loaded ; i++){
+        compta[i].typical = compta[i+1].typical;
+        compta[i].avg = compta[i+1].avg;
     }
   }
+
+  // add new values
+  compta[loaded].typical = v.PartSize;
+  compta[loaded].avg = avg;
+
+  // as long as history not fully loaded
+  if (loaded < INCLUDE_ERRORCALC) loaded++;
+
+  // get the running values (as far as they are in history)
+  for (i = 0; i < loaded; i++){
+    error += (double) (compta[i].typical - compta[i].avg);
+    tot_t += (double) compta[i].typical;
+  }
+
+  // calculate error
+  return( error /  tot_t);
 }
 
 /**
  *  @brief : continued loop after fatal error
  *  @param mess : message to display
  *  @param r : error code
- *
  *  if r is zero, it will only display the message
  */
 void Errorloop(char *mess, uint8_t r)
@@ -428,7 +529,6 @@ void Errorloop(char *mess, uint8_t r)
  *  @brief : display error message
  *  @param mess : message to display
  *  @param r : error code
- *
  */
 void ErrtoMess(char *mess, uint8_t r)
 {

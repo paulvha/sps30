@@ -10,7 +10,7 @@ tested to run either UART or I2C communcation on ESP32, MEGA2560, ESP8266 and UN
 As part of a larger project I am looking at analyzing and understanding the air quality.
 I have done a number of projects on air-sensors. The SPS30 sensor is a new kid on the block
 that looks interesting. This is the first version of a working driver + examples.
-More work to be done to create examples and compare against other sensors.
+More work is happening to create examples and compare against other sensors.
 
 A word of warning: the SPS30 needs a female plug of ZHR-5 from JST Sales America Inc.
 I have not been able to find a good source for that and was glad to buy the Sparkfun version
@@ -39,8 +39,8 @@ Please see the description in the top of the sketch and read the documentation (
  * Added ESP8266 support info
 
 ### version 1.2  / January 2019
- * added force serial1 when TX = RX = 8
- * added flag INCLUDE_SOFTWARE_SERIAL to optionally exclude software Serial
+ * Added force serial1 when TX = RX = 8
+ * Added flag INCLUDE_SOFTWARE_SERIAL to optionally exclude software Serial
  * Tested by Ryan Brown on a Sparkfun Photon RED board and the code should also work with the Photon, P1, and Electrons
 
 ### version 1.2.1 / February 2019
@@ -54,8 +54,13 @@ Please see the description in the top of the sketch and read the documentation (
  * Added example 8 (SPS30 + SCD30 + BME280)
  * Added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for boards with small footprint (thanks Just van den Broecke)
 
-### Version 1.3.1 / February 2019
+### version 1.3.1 / February 2019
  * fixed the PM10 number always showing 0 issue.
+
+### version 1.3.2 / February 2019
+ * Added example 9 (with compare typical size)
+ * Updated the documentation with compare results to SDS011 and Dylos-1700
+ * Update all examples to have prototypes upfront as the ESP32 pre-processor sometimes does not create
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
