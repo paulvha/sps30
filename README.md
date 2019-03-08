@@ -70,4 +70,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgements
 Make sure to read the datasheet from Sensirion. While draft it does provide good starting point.<br>
+In case you are new to electronics and  wonder about pull-up resistors, see below (thanks to Shane Diller)
+
+![Uno and SP30](https://github.com/paulvha/sps30/tree/master/extras/sensirion and Uno circuit diagram.png)
 
