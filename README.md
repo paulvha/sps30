@@ -17,7 +17,7 @@ I have not been able to find a good source for that and was glad to buy the Spar
 (https://www.sparkfun.com/products/15103) which does include a cable with this plug.
 
 ## Prerequisites
-Examples 4, 5, 7 and 8 have a dependency on other libraries. Documented in sketch
+Examples 4, 5, 7,8 and 10 have a dependency on other libraries. Documented in sketch
 
 ## Software installation
 Obtain the zip and install like any other
@@ -62,6 +62,10 @@ Please see the description in the top of the sketch and read the documentation (
  * Updated the documentation with compare results to SDS011 and Dylos-1700
  * Update all examples to have prototypes upfront as the ESP32 pre-processor sometimes does not create
 
+### version 1.3.3 / March 2019
+ * Added example 10 for ESP32 only: use SPS30 to create an airquality index by region
+ * update documentation to 1.3
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
@@ -70,7 +74,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgements
 Make sure to read the datasheet from Sensirion. While draft it does provide good starting point.<br>
-In case you are new to electronics and  wonder about pull-up resistors, see below (thanks to Shane Diller)
+In case you are new to electronics and  wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
 
 ![Uno and SP30](extras/sensirion.png)
 
