@@ -3,11 +3,14 @@
  *  
  *  version 1.0.1 / March 2019
  *     Added base-option for PM2.5 and PM10
+ *     
+ *  version 1.0.2 / March 2019
+ *     Added support for ESP8266-thing ((https://www.sparkfun.com/products/13231)
  *
  *  =========================  Highlevel description ================================
  *
  * This sketch will connect to an SPS30 for getting data, store data and display the 
- * available data. The sketch has been devloped and tested only for an ESP32. 
+ * available data. The sketch has been devloped and tested for an ESP32 and ESP8266. 
  * 
  * The data during-hour and during-day is stored RAM and at end-of-day it will be 
  * combined with data from previous days that is stored in NVRAM.
@@ -40,6 +43,10 @@
  *
  *  Also successfully tested on Serial2 (default pins TX:17, RX: 16)
  *  NO level shifter is needed as the SPS30 is TTL 5V and LVTTL 3.3V compatible
+ *  
+ *  Not tested ESP8266
+ *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial 
+ *  
  *  //////////////////////////////////////////////////////////////////////////////////
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
  *  //////////////////////////////////////////////////////////////////////////////////
@@ -65,11 +72,37 @@
  *  4 Select ----- GND (select I2c)
  *  5 GND -------- GND
  *
- *  The pull-up resistors should be to 3V3
+ *  The pull-up resistors must be to 3V3
+ *  
+ *  ..........................................................
+ *  Successfully tested on ESP8266-thing from Sparkfun (https://www.sparkfun.com/products/13231)
+ *
+ *  SPS30 pin     External     ESP8266
+ *  1 VCC -------- 5V
+ *  2 SDA -----------------------SDA
+ *  3 SCL -----------------------SCL
+ *  4 Select ----- GND --------- GND  (select I2c)
+ *  5 GND -------- GND --------- GND
+ *
+ *
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!  IMPORTANT for ESP8266 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *  For SPS30 : If you did NOT cut the default connections SJ2 on the board, I2C pull up resistor, you do 
+ *  not need external pull-up resistors. Otherwise you need to add externally 10K pull-up 
+ *  resistors to 3V3.
+ *    
+ * For AQI library :
+ * The ESP8266-thing is receiving a reset pulse from the DTR signal, triggered through a capacitor, 
+ * to pin 32 (EXT-RSTB) of the ESP8266.
+ * 
+ * If you look on the back of the board you will find near the FTDI connector a small test-point called : RST.  
+ * If you connect a wire from this point to VIN (JP3-pin2), you basically harmless disable the reset pulse happening.
+ *
+ * Best to use a switch to make this connection once the program is running, as the board needs reset
+ * after loading new software.
  *  
  *  ================================= PARAMETERS =====================================
  *
- *  From line 99 there are configuration parameters for the program
+ *  From line 132 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -96,7 +129,7 @@
 #include <sps30.h>
 
 /////////////////////////////////////////////////////////////
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 
 /////////////////////////////////////////////////////////////
 /*define communication channel to use for SPS30
@@ -180,10 +213,14 @@ void setup()
 {
   Serial.begin(115200);
   
-  serialTrigger("SPS30-Example10: Read values, store and calculate AQI. ESP32 ONLY !  Press <enter> to start");
+  serialTrigger("SPS30-Example10: Read values, store and calculate AQI. ESP32 or ESP8266 ONLY !  Press <enter> to start");
 
-  if (!EEPROM.begin(AQISIZE)) Errorloop("failed to initialise NVRAM", 0);
-  
+#if defined(ARDUINO_ARCH_ESP32) 
+  if (!EEPROM.begin(AQISIZE)) Errorloop("failed to initialise NVRAM", 0); 
+#else  
+  EEPROM.begin(AQISIZE);       // the ESP8266 is using void begin(), instead of bool begin() with ESP32, as such not check
+#endif
+
   Serial.println(F("Trying to connect to SPS30"));
 
   // set driver debug level
@@ -507,10 +544,10 @@ void clear_nvram()
     
     else if(strcmp(keyb,"CLEAR") == 0) {
       aqi.SetStats(NULL);
-      Serial.print(F("completed"));
+      Serial.println(F("completed"));
     }
     else {
-      Serial.print(F("Cancelled unknown command : "));
+      Serial.print(F("Cancelled. Unknown command : "));
       Serial.println(keyb);
     }
 }
