@@ -66,6 +66,9 @@ Please see the description in the top of the sketch and read the documentation (
  * Added example 10 for ESP32 only: use SPS30 to create an airquality index by region
  * update documentation to 1.3
 
+### version 1.3.4 / April 2019
+ * corrected the stop measurement command
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 

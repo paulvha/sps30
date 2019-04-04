@@ -33,6 +33,9 @@
  * version 1.3.0 / February 2019
  * - added check on the I2C receive buffer. If at least 64 bytes it try to read ALL information else only MASS results
  * - added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for small footprint
+ * 
+ * version 1.3.1 / April 2019
+ * - corrected bool stop() {return(Instruct(SER_STOP_MEASUREMENT));}
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -288,7 +291,7 @@ class SPS30
     bool probe();
     bool reset() {return(Instruct(SER_RESET));}
     bool start() {return(Instruct(SER_START_MEASUREMENT));}
-    bool stop() {return(Instruct(SER_START_MEASUREMENT));}
+    bool stop() {return(Instruct(SER_STOP_MEASUREMENT));}
     bool clean() {return(Instruct(SER_START_FAN_CLEANING));}
 
     /**
