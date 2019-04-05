@@ -67,7 +67,7 @@ Please see the description in the top of the sketch and read the documentation (
  * update documentation to 1.3
 
 ### version 1.3.4 / April 2019
- * corrected the stop measurement command
+ * corrected the stop measurement command (spotted by detamend)
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
