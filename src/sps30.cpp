@@ -543,6 +543,8 @@ uint8_t SPS30::GetValues(struct sps_values *v)
 
     // I2C will only provide valid data bytes depending on I2C buffer
     // if I2C buffer is less than 64 it only providing MASS info (set in constructor)
+
+#if defined INCLUDE_I2C
     if (I2C_Max_bytes > 20) {
         v->NumPM0 = byte_to_float(offset + 16);
         v->NumPM1 = byte_to_float(offset + 20);
@@ -551,6 +553,8 @@ uint8_t SPS30::GetValues(struct sps_values *v)
         v->NumPM10 = byte_to_float(offset + 32);
         v->PartSize = byte_to_float(offset + 36);
     }
+#endif
+
     return(ERR_OK);
 }
 
@@ -615,11 +619,15 @@ bool SPS30::setSerialSpeed()
             _serial = &Serial;
             break;
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(_SAMD21_)
         case SERIALPORT1:
             Serial1.begin(_Serial_baud);
             _serial = &Serial1;
             break;
+
+#endif
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 
         case SERIALPORT2:
             Serial2.begin(_Serial_baud);
@@ -655,12 +663,15 @@ bool SPS30::setSerialSpeed()
                 if (_SPS30_Debug) printf("TX/RX line not defined\n");
                 return false;
             }
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(_SAMD21_)
             // In case RX and TX are both pin 8, try Serial1 anyway.
             // A way to force-enable Serial1 on some boards.
             if (Serial_RX == 8 && Serial_TX == 8) {
                 Serial1.begin(_Serial_baud);
                 _serial = &Serial1;
             }
+#endif
 
             else // try softserial
             {

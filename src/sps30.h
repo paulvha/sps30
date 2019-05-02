@@ -89,6 +89,13 @@
 
 #endif // AVR definition check
 
+/*
+ * Arduino SAMD does not include software serial
+*/
+#if defined(_SAMD21_)
+	#undef INCLUDE_SOFTWARE_SERIAL
+#endif
+
 #if defined INCLUDE_I2C
 
     #if defined SOFTI2C_ESP32       // in case of SCD30
