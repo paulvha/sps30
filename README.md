@@ -73,7 +73,7 @@ Please see the description in the top of the sketch and read the documentation (
 
 ### version 1.3.5 / May 2019
  * added support for MKRZERO/SAMD I2C buffer detection and disable softerial
- * updated documentation for PROMINI I2C buffer adjustment in odt-file (thanks toinput Bert Heusinkveld)
+ * updated documentation for PROMINI I2C buffer adjustment in odt-file (thanks to Bert Heusinkveld)
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
