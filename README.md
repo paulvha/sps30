@@ -16,6 +16,8 @@ A word of warning: the SPS30 needs a female plug of ZHR-5 from JST Sales America
 I have not been able to find a good source for that and was glad to buy the Sparkfun version
 (https://www.sparkfun.com/products/15103) which does include a cable with this plug.
 
+<br> May 2019 : there is also a library available for Raspberry Pi (https://github.com/paulvha/sps30_on_raspberry)
+
 ## Prerequisites
 Examples 4, 5, 7,8 and 10 have a dependency on other libraries. Documented in sketch
 
@@ -68,6 +70,10 @@ Please see the description in the top of the sketch and read the documentation (
 
 ### version 1.3.4 / April 2019
  * corrected the stop measurement command (spotted by detamend)
+
+### version 1.3.5 / May 2019  (advised by Bert Heusinkveld)
+ * added support for MKRZERO/SAMD I2C buffer detection and disable softerial
+ * updated documentation for PROMINI I2C buffer adjustment in odt-file
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

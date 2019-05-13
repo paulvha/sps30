@@ -542,7 +542,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
     v->MassPM10 = byte_to_float(offset + 12);
 
     // I2C will only provide valid data bytes depending on I2C buffer
-    // if I2C buffer is less than 64 it only providing MASS info (set in constructor)
+    // if I2C buffer is less than 64 we only provide MASS info (set in constructor)
     if (I2C_Max_bytes > 20) {
         v->NumPM0 = byte_to_float(offset + 16);
         v->NumPM1 = byte_to_float(offset + 20);
@@ -565,7 +565,7 @@ float SPS30::byte_to_float(int x)
     ByteToFloat conv;
 
     for (byte i = 0; i < 4; i++){
-        conv.array[3-i] = _Receive_BUF[x+i]; //or conv.array[i] = _Receive_BUF[x+i]; depending on endianness
+       conv.array[3-i] = _Receive_BUF[x+i]; //or conv.array[i] = _Receive_BUF[x+i]; depending on endianness
     }
 
     return conv.value;
@@ -664,14 +664,21 @@ bool SPS30::setSerialSpeed()
 
             else // try softserial
             {
+
 #if defined(INCLUDE_SOFTWARE_SERIAL)
+
+  #if not defined ARDUINO_ARCH_SAMD  && not defined ARDUINO_ARCH_SAM21D    // NO softserial on SAMD
                 static SoftwareSerial swSerial(Serial_RX, Serial_TX);
                 swSerial.begin(_Serial_baud);
                 _serial = &swSerial;
+  #else
+        if (_SPS30_Debug) printf("No SoftWare Serial on SAMD\n");
+  #endif // NO softserial on SAMD
+
 #else
                 if (_SPS30_Debug) printf("SoftWare Serial not enabled\n");
                 return(false);
-#endif
+#endif //INCLUDE_SOFTWARE_SERIAL
             }
             break;
     }

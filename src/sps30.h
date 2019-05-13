@@ -33,9 +33,12 @@
  * version 1.3.0 / February 2019
  * - added check on the I2C receive buffer. If at least 64 bytes it try to read ALL information else only MASS results
  * - added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for small footprint
- * 
+ *
  * version 1.3.1 / April 2019
  * - corrected bool stop() {return(Instruct(SER_STOP_MEASUREMENT));}
+ *
+ * version 1.3.2 / May 2019
+ * - added support to detect SAMD I2C buffer size
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -95,7 +98,7 @@
         #include <SoftWire/SoftWire.h>
     #else
         #include "Wire.h"           // for I2c
-    #endif                          // SOFTI2C_ESP32
+    #endif
 
     /* Version 1.3.0
      *
@@ -123,12 +126,25 @@
         #define I2C_LENGTH  I2C_BUFFER_LENGTH
     #endif
 
+    /* version 1.3.2 added support for SAMD SERCOM detection */
+    #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D         // Depending on definition in wire.h (RingBufferN<256> rxBuffer;)
+        #undef  I2C_LENGTH
+        #define I2C_LENGTH  256
+    #endif
+
 #endif // INCLUDE_I2C
 
 #if defined INCLUDE_UART
+
     #if defined INCLUDE_SOFTWARE_SERIAL
-        #include <SoftwareSerial.h>         // softserial
+
+        /* version 1.3.2 added support for SAMD SERCOM detection */
+      #if not defined ARDUINO_ARCH_SAMD  && not defined ARDUINO_ARCH_SAM21D      // NO softserial on SAMD
+         #include <SoftwareSerial.h>        // softserial
+      #endif // not defined ARDUINO_ARCH_SAMD
+
     #endif // INCLUDE_SOFTWARE_SERIAL
+
 #endif // INCLUDE_UART
 
 /**
