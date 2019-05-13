@@ -72,9 +72,8 @@ Please see the description in the top of the sketch and read the documentation (
  * corrected the stop measurement command (spotted by detamend)
 
 ### version 1.3.5 / May 2019
- * input from Bert Heusinkveld
  * added support for MKRZERO/SAMD I2C buffer detection and disable softerial
- * updated documentation for PROMINI I2C buffer adjustment in odt-file
+ * updated documentation for PROMINI I2C buffer adjustment in odt-file (thanks toinput Bert Heusinkveld)
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
