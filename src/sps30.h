@@ -39,6 +39,10 @@
  *
  * version 1.3.2 / May 2019
  * - added support to detect SAMD I2C buffer size
+ *
+ * Version 1.3.6 / September 2019
+ * - fixed I2C_Max_bytes () error when I2C is excluded
+ * - changed sps.h to keep UART included __AVR_ATmega32U4__
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -83,7 +87,8 @@
 /**
  *  Auto detect that some boards have low memory. (like Uno)
  */
-#if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__)
+
+#if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__)|| defined(__AVR_ATmega16U4__)
     #define SMALLFOOTPRINT 1
 
     #if defined INCLUDE_UART
@@ -91,6 +96,11 @@
     #endif //INCLUDE_UART
 
 #endif // AVR definition check
+
+// Version 1.3.6
+#if defined (__AVR_ATmega32U4__)
+    #define SMALLFOOTPRINT 1
+#endif
 
 #if defined INCLUDE_I2C
 
@@ -152,7 +162,7 @@
  *   I2C_COMMS              use I2C communication
  *   SOFTWARE_SERIAL        Arduino variants and ESP8266 (On ESP32 software Serial is NOT very stable)
  *   SERIALPORT             ONLY IF there is NO monitor attached
- *   SERIALPORT1            Arduino MEGA2560, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
+ *   SERIALPORT1            Arduino MEGA2560, 32U4, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
  *   SERIALPORT2            Arduino MEGA2560 and ESP32
  *   SERIALPORT3            Arduino MEGA2560 only for now
  *   NONE                   No port defined
@@ -197,6 +207,7 @@ typedef struct sps_values
 #define v_NumPM10 9
 #define v_PartSize 10
 
+
 /* needed for conversion float IEE754 */
 typedef union {
     byte array[4];
@@ -221,15 +232,14 @@ typedef union {
 #define ERR_TIMEOUT     0x50
 #define ERR_PROTOCOL    0x51
 
-typedef struct Description {
-    uint8_t code;
-    char    desc[80];
-};
-
 /* Receive buffer length. Expected is 40 bytes max
  * but you never know in the future.. */
 #if defined SMALLFOOTPRINT
 #define MAXRECVBUFLENGTH 50         // for light boards
+typedef struct Description {
+    uint8_t code;
+    char    desc[80];
+};
 #else
 #define MAXRECVBUFLENGTH 128
 #endif
@@ -276,13 +286,6 @@ class SPS30
   public:
 
     SPS30(void);
-
-    /**
-     * @brief : set RX and TX pin for softserial and Serial1 on ESP32
-     * Setting both to 8 (tx=rx=8) will force a Serial1 communication
-     * on any device (assuming the pins are hard coded)
-     */
-    void SetSerialPin(uint8_t rx, uint8_t tx);
 
     /**
     * @brief  Enable or disable the printing of sent/response HEX values.
@@ -347,6 +350,13 @@ class SPS30
     float GetNumPM10()  {return(Get_Single_Value(v_NumPM10));}
     float GetPartSize() {return(Get_Single_Value(v_PartSize));}
 
+   /**
+     * @brief : set RX and TX pin for softserial and Serial1 on ESP32
+     * Setting both to 8 (tx=rx=8) will force a Serial1 communication
+     * on any device (assuming the pins are hard coded)
+     */
+    void SetSerialPin(uint8_t rx, uint8_t tx);
+
 #if defined INCLUDE_I2C
     /**
      * @brief : Return the expected number of valid values read from device
@@ -375,10 +385,10 @@ class SPS30
     /** shared supporting routines */
     uint8_t Get_Device_info(uint8_t type, char *ser, uint8_t len);
     bool Instruct(uint8_t type);
-    float Get_Single_Value(uint8_t value);
     float byte_to_float(int x);
     uint32_t byte_to_U32(int x);
     uint8_t Serial_RX = 0, Serial_TX = 0; // softserial or Serial1 on ESP32
+    float Get_Single_Value(uint8_t value);
 
 #if defined INCLUDE_UART
     /** UART / serial related */

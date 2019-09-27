@@ -73,7 +73,11 @@ Please see the description in the top of the sketch and read the documentation (
 
 ### version 1.3.5 / May 2019
  * added support for MKRZERO/SAMD I2C buffer detection and disable softerial
- * updated documentation for PROMINI I2C buffer adjustment in odt-file (thanks to Bert Heusinkveld)
+ * updated documentation for PROMINI I2C buffer adjustment in odt-file (thanks to input Bert Heusinkveld)
+
+### version 1.3.6 / September 2019
+ * fixed I2C_Max_bytes error when I2C is excluded in sps30.h
+ * changed to keep UART included for__AVR_ATmega32U4__ and support SERIALPORT1
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
@@ -83,7 +87,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgements
 Make sure to read the datasheet from Sensirion. While draft it does provide good starting point.<br>
-In case you are new to electronics and  wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
+In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
 
 ![Uno and SP30](extras/sensirion.png)
 

@@ -38,6 +38,14 @@
  *
  * Version 1.3.1 / February 2019
  * - fixed the PM10 always showing 0 issue.
+ *
+ * version 1.3.2 / May 2019
+ * - added support to detect SAMD I2C buffer size
+ *
+ * Version 1.3.6 / September 2019
+ * - fixed I2C_Max_bytes error when I2C is excluded
+ * - changed to keep UART SERIALPORT1 included for__AVR_ATmega32U4__
+ *
  *********************************************************************
  */
 
@@ -130,19 +138,7 @@ void SPS30::EnableDebugging(uint8_t act)
     _SPS30_Debug = act;
 }
 
-/**
- * @brief Set serial pin for TX and RX
- * @param rx : receive pin to use
- * @param tx : transmit pin to use
- *
- * only used for softserial or Serial1 on the ESP32
- */
-/* set the pin to use */
-void SPS30::SetSerialPin(uint8_t rx, uint8_t tx)
-{
-    Serial_RX = rx;
-    Serial_TX = tx;
-}
+
 
 /**
  * @brief check if SPS30 sensor is available (read serial number)
@@ -298,51 +294,6 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
     return(ERR_OK);
 }
 
-/**
- * @brief : read the auto clean interval
- * @param val : pointer to return the interval value
- *
- * The default cleaning interval is set to 604’800 seconds (i.e., 168 hours or 1 week).
- *
- * Return:
- *  OK = ERR_OK
- *  else error
- */
-uint8_t SPS30::GetAutoCleanInt(uint32_t *val)
-{
-    uint8_t ret, offset;
-
-#if defined INCLUDE_I2C
-
-    if (_Sensor_Comms == I2C_COMMS) {
-
-        I2C_fill_buffer(I2C_AUTO_CLEANING_INTERVAL);
-
-        ret = I2C_SetPointer_Read(4);
-
-        offset = 0;
-    }
-    else
-#endif // INCLUDE_I2C
-
-#if defined INCLUDE_UART
-    {
-        // fill buffer to send
-        if (SHDLC_fill_buffer(SER_READ_AUTO_CLEANING) != true) return(ERR_PARAMETER);
-
-        ret = ReadFromSerial();
-
-        offset = 5;
-    }
-#else
-    {}
-#endif // INCLUDE_UART
-
-    // get data
-    *val = byte_to_U32(offset);
-
-    return(ret);
-}
 
 /**
  * @brief : SET the auto clean interval
@@ -399,6 +350,7 @@ uint8_t SPS30::SetAutoCleanInt(uint32_t val)
 #endif //INCLUDE_UART
 }
 
+
 /**
  * @brief : get single sensor value
  * @param value : the single value to get
@@ -441,6 +393,67 @@ float SPS30::Get_Single_Value(uint8_t value)
         case v_PartSize: return(v.PartSize);
     }
 }
+
+/**
+ * @brief Set serial pin for TX and RX
+ * @param rx : receive pin to use
+ * @param tx : transmit pin to use
+ *
+ * only used for softserial or Serial1 on the ESP32
+ */
+/* set the pin to use */
+void SPS30::SetSerialPin(uint8_t rx, uint8_t tx)
+{
+    Serial_RX = rx;
+    Serial_TX = tx;
+}
+
+/**
+ * @brief : read the auto clean interval
+ * @param val : pointer to return the interval value
+ *
+ * The default cleaning interval is set to 604’800 seconds (i.e., 168 hours or 1 week).
+ *
+ * Return:
+ *  OK = ERR_OK
+ *  else error
+ */
+uint8_t SPS30::GetAutoCleanInt(uint32_t *val)
+{
+    uint8_t ret, offset;
+
+#if defined INCLUDE_I2C
+
+    if (_Sensor_Comms == I2C_COMMS) {
+
+        I2C_fill_buffer(I2C_AUTO_CLEANING_INTERVAL);
+
+        ret = I2C_SetPointer_Read(4);
+
+        offset = 0;
+    }
+    else
+#endif // INCLUDE_I2C
+
+#if defined INCLUDE_UART
+    {
+        // fill buffer to send
+        if (SHDLC_fill_buffer(SER_READ_AUTO_CLEANING) != true) return(ERR_PARAMETER);
+
+        ret = ReadFromSerial();
+
+        offset = 5;
+    }
+#else
+    {}
+#endif // INCLUDE_UART
+
+    // get data
+    *val = byte_to_U32(offset);
+
+    return(ret);
+}
+
 
 /**
  * @brief : get error description
@@ -543,7 +556,10 @@ uint8_t SPS30::GetValues(struct sps_values *v)
 
     // I2C will only provide valid data bytes depending on I2C buffer
     // if I2C buffer is less than 64 we only provide MASS info (set in constructor)
-    if (I2C_Max_bytes > 20) {
+#if defined INCLUDE_I2C
+    if (I2C_Max_bytes > 20)
+#endif // INCLUDE_I2C
+    {
         v->NumPM0 = byte_to_float(offset + 16);
         v->NumPM1 = byte_to_float(offset + 20);
         v->NumPM2 = byte_to_float(offset + 24);
@@ -629,6 +645,13 @@ bool SPS30::setSerialSpeed()
         case SERIALPORT3:
             Serial3.begin(_Serial_baud);
             _serial = &Serial3;
+            break;
+#endif
+
+#if defined(__AVR_ATmega32U4__)  // version 1.3.6
+        case SERIALPORT1:
+            Serial1.begin(_Serial_baud);
+            _serial = &Serial1;
             break;
 #endif
 
