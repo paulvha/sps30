@@ -77,7 +77,7 @@ Please see the description in the top of the sketch and read the documentation (
 
 ### version 1.3.6 / September 2019
  * fixed I2C_Max_bytes error when I2C is excluded in sps30.h
- * changed to keep UART included for__AVR_ATmega32U4__ and support SERIALPORT1
+ * improve receive buffer checks larger than 3 bytes
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

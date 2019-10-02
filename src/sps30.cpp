@@ -42,9 +42,9 @@
  * version 1.3.2 / May 2019
  * - added support to detect SAMD I2C buffer size
  *
- * Version 1.3.6 / September 2019
+ * Version 1.3.6 / October 2019
  * - fixed I2C_Max_bytes error when I2C is excluded
- * - changed to keep UART SERIALPORT1 included for__AVR_ATmega32U4__
+ * - improve receive buffer checks larger than 3 bytes
  *
  *********************************************************************
  */
@@ -297,7 +297,7 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
 
 /**
  * @brief : SET the auto clean interval
- * @param val : pointer for the interval value
+ * @param val : The new interval value
  *
  *
  * Return:
@@ -997,6 +997,12 @@ uint8_t SPS30::SerialToBuffer()
                        for(i = 0; i < _Receive_BUF_Length+1; i++) printf("0x%02X ",_Receive_BUF[i]);
                        printf("length: %d\n\n",_Receive_BUF_Length);
                     }
+
+                    /* if a board can not handle 115K you get uncontrolled input
+                     * that can result in short /wrong messages
+                     */
+                    if (_Receive_BUF_Length < 3) return(ERR_PROTOCOL);
+
                     return(ERR_OK);
                 }
             }

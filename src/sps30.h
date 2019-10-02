@@ -40,9 +40,9 @@
  * version 1.3.2 / May 2019
  * - added support to detect SAMD I2C buffer size
  *
- * Version 1.3.6 / September 2019
+ * Version 1.3.6 / October 2019
  * - fixed I2C_Max_bytes () error when I2C is excluded
- * - changed sps.h to keep UART included __AVR_ATmega32U4__
+ * - improve receive buffer checks larger than 3 bytes
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -88,7 +88,7 @@
  *  Auto detect that some boards have low memory. (like Uno)
  */
 
-#if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__)|| defined(__AVR_ATmega16U4__)
+#if defined (__AVR_ATmega328__) || defined(__AVR_ATmega328P__)|| defined(__AVR_ATmega16U4__) || (__AVR_ATmega32U4__)
     #define SMALLFOOTPRINT 1
 
     #if defined INCLUDE_UART
@@ -97,10 +97,6 @@
 
 #endif // AVR definition check
 
-// Version 1.3.6
-#if defined (__AVR_ATmega32U4__)
-    #define SMALLFOOTPRINT 1
-#endif
 
 #if defined INCLUDE_I2C
 
@@ -236,12 +232,13 @@ typedef union {
  * but you never know in the future.. */
 #if defined SMALLFOOTPRINT
 #define MAXRECVBUFLENGTH 50         // for light boards
+
+#else
+#define MAXRECVBUFLENGTH 128
 typedef struct Description {
     uint8_t code;
     char    desc[80];
 };
-#else
-#define MAXRECVBUFLENGTH 128
 #endif
 
 /*************************************************************/
