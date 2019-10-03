@@ -648,13 +648,6 @@ bool SPS30::setSerialSpeed()
             break;
 #endif
 
-#if defined(__AVR_ATmega32U4__)  // version 1.3.6
-        case SERIALPORT1:
-            Serial1.begin(_Serial_baud);
-            _serial = &Serial1;
-            break;
-#endif
-
 #if defined(ARDUINO_ARCH_ESP32)
 /* on a Sparkfun ESP32 Thing the default pins for serial1 are used for acccessing flash memory
  * you have to define different pins upfront in order to use serial1 port. */
