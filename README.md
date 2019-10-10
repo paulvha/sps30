@@ -55,6 +55,7 @@ Please see the description in the top of the sketch and read the documentation (
  * Updated examples / documentation / instructions
  * Added example 8 (SPS30 + SCD30 + BME280)
  * Added || defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega16U4__) for boards with small footprint (thanks Just van den Broecke)
+ * Although the __AVR_ATmega32U4__ has a UART, it does NOT support 115K and can only be connected over I2C.
 
 ### version 1.3.1 / February 2019
  * fixed the PM10 number always showing 0 issue.
@@ -78,6 +79,7 @@ Please see the description in the top of the sketch and read the documentation (
 ### version 1.3.6 / September 2019
  * fixed I2C_Max_bytes error when I2C is excluded in sps30.h
  * improve receive buffer checks larger than 3 bytes
+ * A special version for Feather Lora 32U4 has been created ![https://github.com/paulvha/SPS30_lora](https://github.com/paulvha/SPS30_lora)
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
