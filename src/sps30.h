@@ -43,6 +43,9 @@
  * Version 1.3.6 / October 2019
  * - fixed I2C_Max_bytes () error when I2C is excluded
  * - improve receive buffer checks larger than 3 bytes
+ *
+ *  * Version 1.3.7 / December 2019
+ *  - fixed ESP32 serial connection / flushing
  *********************************************************************
 */
 #ifndef SPS30_H

@@ -46,6 +46,9 @@
  * - fixed I2C_Max_bytes error when I2C is excluded
  * - improve receive buffer checks larger than 3 bytes
  *
+ * Version 1.3.7 / December 2019
+ *  - fixed ESP32 serial connection / flushing
+ *
  *********************************************************************
  */
 
@@ -648,6 +651,13 @@ bool SPS30::setSerialSpeed()
             break;
 #endif
 
+#if defined(__AVR_ATmega32U4__)  // version 1.3.6
+        case SERIALPORT1:
+            Serial1.begin(_Serial_baud);
+            _serial = &Serial1;
+            break;
+#endif
+
 #if defined(ARDUINO_ARCH_ESP32)
 /* on a Sparkfun ESP32 Thing the default pins for serial1 are used for acccessing flash memory
  * you have to define different pins upfront in order to use serial1 port. */
@@ -890,6 +900,7 @@ uint8_t SPS30::SendToSerial()
 uint8_t SPS30::ReadFromSerial()
 {
     uint8_t ret;
+    _serial->flush();   // flush anything pending 1.3.7
 
     // write to serial
     ret = SendToSerial();
@@ -934,7 +945,6 @@ uint8_t SPS30::SerialToBuffer()
     uint32_t startTime;
     bool  byte_stuff = false;
     uint8_t i;
-    _serial->flush();
 
     startTime = millis();
     i = 0;
