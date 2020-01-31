@@ -44,8 +44,12 @@
  * - fixed I2C_Max_bytes () error when I2C is excluded
  * - improve receive buffer checks larger than 3 bytes
  *
- *  * Version 1.3.7 / December 2019
+ * Version 1.3.7 / December 2019
  *  - fixed ESP32 serial connection / flushing
+ *
+ * version 1.3.8 / January 2020
+ *  - optimized the fix from October 2019 for I2C max bytes
+ *
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -100,7 +104,6 @@
 
 #endif // AVR definition check
 
-
 #if defined INCLUDE_I2C
 
     #if defined SOFTI2C_ESP32       // in case of SCD30
@@ -123,6 +126,7 @@
      *
      * From a sketch you can check the impact by calling I2C_expect(), which will return the number of valid float values.
      */
+
     #define I2C_LENGTH 32
 
     #if defined BUFFER_LENGTH           // Arduino  & ESP8266 & Softwire
@@ -368,6 +372,8 @@ class SPS30
      * 10 = All values are expected to be valid
      */
     uint8_t I2C_expect();
+#else
+    uint8_t I2C_expect() {return 0;}
 #endif
 
   private:
@@ -381,6 +387,7 @@ class SPS30
     int _SPS30_Debug;           // program debug level
     bool _started;              // indicate the measurement has started
     uint8_t Reported[11];       // use as cache indicator single value
+    uint8_t I2C_Max_bytes;      // moved version 1.3.8
 
     /** shared supporting routines */
     uint8_t Get_Device_info(uint8_t type, char *ser, uint8_t len);
@@ -416,7 +423,7 @@ class SPS30
     uint8_t I2C_SetPointer();
     bool I2C_Check_data_ready();
     uint8_t I2C_calc_CRC(uint8_t data[2]);
-    uint8_t I2C_Max_bytes;
+
 #endif // INCLUDE_I2C
 
 };

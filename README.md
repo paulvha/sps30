@@ -81,8 +81,11 @@ Please see the description in the top of the sketch and read the documentation (
  * improve receive buffer checks larger than 3 bytes
  * A special version for Feather Lora 32U4 has been created ![https://github.com/paulvha/SPS30_lora](https://github.com/paulvha/SPS30_lora)
 
-### Version 1.3.7 / December 2019
+### version 1.3.7 / December 2019
  * fixed ESP32 serial connection / flushing
+
+### version 1.3.8 / January 2020
+ * optimized the fix from October 2019 for I2C max bytes
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

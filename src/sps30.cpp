@@ -49,6 +49,9 @@
  * Version 1.3.7 / December 2019
  *  - fixed ESP32 serial connection / flushing
  *
+ * version 1.3.8 / January 2020
+ *  - optimized the fix from October 2019 for I2C max bytes
+ *
  *********************************************************************
  */
 
@@ -87,9 +90,9 @@ SPS30::SPS30(void)
   _started = false;
   memset(Reported,0x1,sizeof(Reported));     // Trigger reading single value cache
 
+  I2C_Max_bytes = 20;                        // version 1.3.8 (only Mass, in case of I2C)
 #if defined INCLUDE_I2C                      // added with version 1.3.0
   if (I2C_LENGTH >= 64)  I2C_Max_bytes = 40; // total length
-  else I2C_Max_bytes = 20;                   // only Mass
 #endif
 }
 
@@ -559,9 +562,8 @@ uint8_t SPS30::GetValues(struct sps_values *v)
 
     // I2C will only provide valid data bytes depending on I2C buffer
     // if I2C buffer is less than 64 we only provide MASS info (set in constructor)
-#if defined INCLUDE_I2C
-    if (I2C_Max_bytes > 20)
-#endif // INCLUDE_I2C
+    // version 1.3.8 : fixed to correct logic (in case of I2C_COMMS the buffer must be large enough)
+    if (_Sensor_Comms != I2C_COMMS || I2C_Max_bytes > 20)
     {
         v->NumPM0 = byte_to_float(offset + 16);
         v->NumPM1 = byte_to_float(offset + 20);
