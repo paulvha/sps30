@@ -52,6 +52,8 @@
  * version 1.3.8 / January 2020
  *  - optimized the fix from October 2019 for I2C max bytes
  *
+ * version 1.3.9 / February 2020
+ *  - optimized autodetection for SAMD SERCOM and ESP32 to undef softwareSerial
  *********************************************************************
  */
 

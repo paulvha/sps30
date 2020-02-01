@@ -50,6 +50,8 @@
  * version 1.3.8 / January 2020
  *  - optimized the fix from October 2019 for I2C max bytes
  *
+ * version 1.3.9 / February 2020
+ *  - optimized autodetection for SAMD SERCOM and ESP32 to undef softwareSerial
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -71,7 +73,7 @@
 /**
  * On some IDE / boards software Serial is not available
  * comment out line below in that case
- *
+ * 1.3.9 : Autodetection for SAMD SERCOM and ESP32 to undef softwareSerial
  */
 #define INCLUDE_SOFTWARE_SERIAL 1
 
@@ -151,11 +153,14 @@
 
     #if defined INCLUDE_SOFTWARE_SERIAL
 
-        /* version 1.3.2 added support for SAMD SERCOM detection */
-      #if not defined ARDUINO_ARCH_SAMD  && not defined ARDUINO_ARCH_SAM21D      // NO softserial on SAMD
-         #include <SoftwareSerial.h>        // softserial
-      #endif // not defined ARDUINO_ARCH_SAMD
+      /* version 1.3.2 added support for SAMD SERCOM detection */
+      /* version 1.3.9 autodetection for SAMD SERCOM and ESP32 to undef softwareSerial */
 
+      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32    // NO softserial on SAMD & ESP32
+        #undef  INCLUDE_SOFTWARE_SERIAL
+      #else
+         #include <SoftwareSerial.h>        // softserial
+      #endif // not defined ARDUINO_ARCH_SAMD & ESP32
     #endif // INCLUDE_SOFTWARE_SERIAL
 
 #endif // INCLUDE_UART
