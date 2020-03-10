@@ -4,6 +4,9 @@
  *  Version 1.1 Paul van Haastrecht
  *  - Changed the I2C information / setup.
  *
+ *  Version 1.1.1 Paul van Haastrecht / March 2020
+ *  - Fixed compile errors and warnings.
+ *
  *  =========================  Highlevel description ================================
  *
  *  In this invidual reading example you can select which data AND in which order you
@@ -212,7 +215,7 @@ void setup() {
 
   Serial.begin(115200);
 
-  serialTrigger("SPS30-Example3: Basic reading individual. press <enter> to start");
+  serialTrigger((char *) "SPS30-Example3: Basic reading individual. press <enter> to start");
 
   Serial.println(F("Trying to connect"));
 
@@ -224,19 +227,19 @@ void setup() {
 
   // Begin communication channel;
   if (sps30.begin(SP30_COMMS) == false) {
-    Errorloop("could not initialize communication channel.", 0);
+    Errorloop((char *) "could not initialize communication channel.", 0);
   }
 
   // check for SPS30 connection
   if (sps30.probe() == false) {
-    Errorloop("could not probe / connect with SPS30", 0);
+    Errorloop((char *) "could not probe / connect with SPS30", 0);
   }
   else
     Serial.println(F("Detected SPS30"));
 
   // reset SPS30 connection
   if (sps30.reset() == false) {
-    Errorloop("could not reset.", 0);
+    Errorloop((char *) "could not reset.", 0);
   }
 
   // read device info
@@ -246,9 +249,9 @@ void setup() {
   if (sps30.start() == true)
     Serial.println(F("Measurement started"));
   else
-    Errorloop("Could NOT start measurement", 0);
+    Errorloop((char *) "Could NOT start measurement", 0);
 
-  serialTrigger("Hit <enter> to continue reading");
+  serialTrigger((char *) "Hit <enter> to continue reading");
 
   if (SP30_COMMS == I2C_COMMS) {
     if (sps30.I2C_expect() == 4)
@@ -277,7 +280,7 @@ void GetDeviceInfo()
     else Serial.println(F("not available"));
   }
   else
-    ErrtoMess("could not get serial number SPS30.", ret);
+    ErrtoMess((char *) "could not get serial number SPS30.", ret);
 
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
@@ -288,7 +291,7 @@ void GetDeviceInfo()
     else Serial.println(F("not available"));
   }
   else
-    ErrtoMess("could not get product name.", ret);
+    ErrtoMess((char *) "could not get product name.", ret);
 
   // try to get article code
   ret = sps30.GetArticleCode(buf, 32);
@@ -299,7 +302,7 @@ void GetDeviceInfo()
     else Serial.println(F("not available"));
   }
   else
-    ErrtoMess("could not get Article code .", ret);
+    ErrtoMess((char *) "could not get Article code .", ret);
 }
 
 /**
@@ -407,6 +410,8 @@ bool read_all()
           break;
     }
   }
+
+  return(true);
 }
 
 /**

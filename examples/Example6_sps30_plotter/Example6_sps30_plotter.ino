@@ -3,6 +3,10 @@
  *
  *  Version 1.1 Paul van Haastrecht
  *  - Changed the I2C information / setup.
+ *
+ *  Version 1.1.1 Paul van Haastrecht / March 2020
+ *  - Fixed compile errors and warnings.
+ *
  *  =========================  Highlevel description ================================
  *
  *  This basic reading example sketch will connect to an SPS30 for getting data and
@@ -214,26 +218,26 @@ void setup() {
 
   // Begin communication channel;
   if (sps30.begin(SP30_COMMS) == false) {
-    Errorloop("could not initialize communication channel.", 0);
+    Errorloop((char *) "could not initialize communication channel.", 0);
   }
 
   // check for SPS30 connection
   if (sps30.probe() == false) {
-    Errorloop("could not probe / connect with SPS30", 0);
+    Errorloop((char *) "could not probe / connect with SPS30", 0);
   }
   else
     Serial.println(F("Detected SPS30"));
 
   // reset SPS30 connection
   if (sps30.reset() == false) {
-    Errorloop("could not reset", 0);
+    Errorloop((char *) "could not reset", 0);
   }
 
   // start measurement
   if (sps30.start() == true)
     Serial.println(F("Measurement started"));
   else
-    Errorloop("Could NOT start measurement", 0);
+    Errorloop((char *) "Could NOT start measurement", 0);
 
   if (SP30_COMMS == I2C_COMMS) {
     if (sps30.I2C_expect() == 4)
@@ -264,7 +268,7 @@ bool read_all()
     if (ret == ERR_DATALENGTH){
 
         if (error_cnt++ > 3) {
-          ErrtoMess("Error during reading values: ",ret);
+          ErrtoMess((char *) "Error during reading values: ",ret);
           return(false);
         }
         delay(1000);
@@ -272,7 +276,7 @@ bool read_all()
 
     // if other error
     else if(ret != ERR_OK) {
-      ErrtoMess("Error during reading values: ",ret);
+      ErrtoMess((char *) "Error during reading values: ",ret);
       return(false);
     }
 
@@ -281,7 +285,7 @@ bool read_all()
   // skip first reading
   if (s_kip > 0) {
     s_kip--;
-    return;
+    return(true);
   }
 
 if (MASS) {
@@ -310,6 +314,8 @@ if (AVG) {
   Serial.print(val.PartSize);
 }
   Serial.print(F("\n"));
+
+  return(true);
 }
 
 /**

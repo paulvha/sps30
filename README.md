@@ -90,6 +90,9 @@ Please see the description in the top of the sketch and read the documentation (
 ### version 1.3.9 / February 2020
  *  optimized autodetection for SAMD SERCOM and ESP32 to undef softwareSerial
 
+### version 1.3.10 / March 2020
+ *  Updated examples for new compile errors and warnings wih IDE 1.8.12
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 

@@ -1,28 +1,25 @@
 /************************************************************************************
  *  Copyright (c) March 2019, initial version Paul van Haastrecht
- *  
+ *
  *  version 1.0.1 / March 2019
  *     Added base-option for PM2.5 and PM10
- *     
- *  version 1.0.2 / March 2019
- *     Added support for ESP8266-thing ((https://www.sparkfun.com/products/13231)
  *
  *  =========================  Highlevel description ================================
  *
- * This sketch will connect to an SPS30 for getting data, store data and display the 
- * available data. The sketch has been devloped and tested for an ESP32 and ESP8266. 
- * 
- * The data during-hour and during-day is stored RAM and at end-of-day it will be 
+ * This sketch will connect to an SPS30 for getting data, store data and display the
+ * available data. The sketch has been devloped and tested only for an ESP32.
+ *
+ * The data during-hour and during-day is stored RAM and at end-of-day it will be
  * combined with data from previous days that is stored in NVRAM.
- *  
- * Based on the captured data and the region setting, it can calculate and display 
+ *
+ * Based on the captured data and the region setting, it can calculate and display
  * an air qualityindex that is applicable for that region.
- * 
+ *
  * While this example is using SPS30 as a sensor, there is no reason why the AQI library
  * could not be combined with other sensors. For the SPS30 you will need the library
  * from https://github.com/paulvha/sps30
- * 
- * !!!!!!! See the seperate document (AQI.odt) for reasons and more information !!!!!. 
+ *
+ * !!!!!!! See the seperate document (AQI.odt) for reasons and more information !!!!!.
  *
  *  =========================  SPS30 Hardware connections =================================
  *  /////////////////////////////////////////////////////////////////////////////////
@@ -43,10 +40,6 @@
  *
  *  Also successfully tested on Serial2 (default pins TX:17, RX: 16)
  *  NO level shifter is needed as the SPS30 is TTL 5V and LVTTL 3.3V compatible
- *  
- *  Not tested ESP8266
- *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial 
- *  
  *  //////////////////////////////////////////////////////////////////////////////////
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
  *  //////////////////////////////////////////////////////////////////////////////////
@@ -72,37 +65,11 @@
  *  4 Select ----- GND (select I2c)
  *  5 GND -------- GND
  *
- *  The pull-up resistors must be to 3V3
- *  
- *  ..........................................................
- *  Successfully tested on ESP8266-thing from Sparkfun (https://www.sparkfun.com/products/13231)
+ *  The pull-up resistors should be to 3V3
  *
- *  SPS30 pin     External     ESP8266
- *  1 VCC -------- 5V
- *  2 SDA -----------------------SDA
- *  3 SCL -----------------------SCL
- *  4 Select ----- GND --------- GND  (select I2c)
- *  5 GND -------- GND --------- GND
- *
- *
- * !!!!!!!!!!!!!!!!!!!!!!!!!!  IMPORTANT for ESP8266 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *  For SPS30 : If you did NOT cut the default connections SJ2 on the board, I2C pull up resistor, you do 
- *  not need external pull-up resistors. Otherwise you need to add externally 10K pull-up 
- *  resistors to 3V3.
- *    
- * For AQI library :
- * The ESP8266-thing is receiving a reset pulse from the DTR signal, triggered through a capacitor, 
- * to pin 32 (EXT-RSTB) of the ESP8266.
- * 
- * If you look on the back of the board you will find near the FTDI connector a small test-point called : RST.  
- * If you connect a wire from this point to VIN (JP3-pin2), you basically harmless disable the reset pulse happening.
- *
- * Best to use a switch to make this connection once the program is running, as the board needs reset
- * after loading new software.
- *  
  *  ================================= PARAMETERS =====================================
  *
- *  From line 132 there are configuration parameters for the program
+ *  From line 99 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -129,7 +96,7 @@
 #include <sps30.h>
 
 /////////////////////////////////////////////////////////////
-#define VERSION "1.0.2"
+#define VERSION "1.0.1"
 
 /////////////////////////////////////////////////////////////
 /*define communication channel to use for SPS30
@@ -209,17 +176,13 @@ char keyb[KEYB_BUF +1];           // holds keyboard input
 bool show_measurements = false;   // display measurements performed
 bool base = HISTORY;              // PM2.5 and PM10 values to use
 
-void setup() 
+void setup()
 {
   Serial.begin(115200);
-  
-  serialTrigger("SPS30-Example10: Read values, store and calculate AQI. ESP32 or ESP8266 ONLY !  Press <enter> to start");
 
-#if defined(ARDUINO_ARCH_ESP32) 
-  if (!EEPROM.begin(AQISIZE)) Errorloop("failed to initialise NVRAM", 0); 
-#else  
-  EEPROM.begin(AQISIZE);       // the ESP8266 is using void begin(), instead of bool begin() with ESP32, as such not check
-#endif
+  serialTrigger((char *) "SPS30-Example10: Read values, store and calculate AQI. ESP32 ONLY !  Press <enter> to start");
+
+  if (!EEPROM.begin(AQISIZE)) Errorloop((char *) "failed to initialise NVRAM", 0);
 
   Serial.println(F("Trying to connect to SPS30"));
 
@@ -230,21 +193,21 @@ void setup()
   if (TX_PIN != 0 && RX_PIN != 0) sps30.SetSerialPin(RX_PIN,TX_PIN);
 
   // Begin communication channel;
-  if (sps30.begin(SP30_COMMS) == false)  Errorloop("could not initialize communication channel.", 0);
-  
+  if (sps30.begin(SP30_COMMS) == false)  Errorloop((char *) "could not initialize communication channel.", 0);
+
   // check for SPS30 connection
-  if (sps30.probe() == false) Errorloop("could not probe / connect with SPS30.", 0);
+  if (sps30.probe() == false) Errorloop((char *) "could not probe / connect with SPS30.", 0);
   else  Serial.println(F("Detected SPS30."));
 
   // reset SPS30 connection
-  if (sps30.reset() == false)  Errorloop("could not reset.", 0);
- 
+  if (sps30.reset() == false)  Errorloop((char *) "could not reset.", 0);
+
   // read device info
   GetDeviceInfo();
 
   // start measurement
   if (sps30.start() == true) Serial.println(F("Measurement started"));
-  else Errorloop("Could NOT start measurement", 0);
+  else Errorloop((char *) "Could NOT start measurement", 0);
 
   if (SP30_COMMS == I2C_COMMS) {
     if (sps30.I2C_expect() == 4)
@@ -254,13 +217,13 @@ void setup()
   disp_help();
 }
 
-void loop() 
+void loop()
 {
   static uint8_t cnt = 0;
-  
+
   // check for keyboard input
-  if (keyboard_inp("\nEnter your command (? for help)") > 0) {
-    
+  if (keyboard_inp((char *) "\nEnter your command (? for help)") > 0) {
+
     Serial.print(F("Received ==========>>>> "));
     Serial.println(keyb);
     if (strcmp(keyb,"nvram") == 0) read_nvram();
@@ -277,7 +240,7 @@ void loop()
     else if (strcmp(keyb,"base") == 0)  base = !base;
     else Serial.println(F("Unknown command"));
   }
-  
+
   // read, store and show(?) values from SPS30 (update every 5 seconds)
   if (cnt++ == 10) {read_all(); cnt = 0;}
 
@@ -321,15 +284,15 @@ void GetDeviceInfo()
 
   //try to read serial number
   ret = sps30.GetSerialNumber(buf, 32);
-  
+
   if (ret == ERR_OK) {
     Serial.print(F("Serial number : "));
-    
+
     if(strlen(buf) > 0)  Serial.println(buf);
     else Serial.println(F("not available"));
   }
   else
-    ErrtoMess("could not get serial number", ret);
+    ErrtoMess((char *) "could not get serial number", ret);
 
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
@@ -340,7 +303,7 @@ void GetDeviceInfo()
     else Serial.println(F("not available"));
   }
   else
-    ErrtoMess("could not get product name.", ret);
+    ErrtoMess((char *) "could not get product name.", ret);
 
   // try to get article code
   ret = sps30.GetArticleCode(buf, 32);
@@ -351,7 +314,7 @@ void GetDeviceInfo()
     else Serial.println(F("not available"));
   }
   else
-    ErrtoMess("could not get Article code .", ret);
+    ErrtoMess((char *) "could not get Article code .", ret);
 }
 
 
@@ -364,17 +327,17 @@ bool read_all()
   static bool first = true;
   uint8_t ret, error_cnt = 0;
   struct sps_values val;
-    
+
   // loop to get data
   do {
 
     ret = sps30.GetValues(&val);
 
     // data might not have been ready or value is 0 (can happen at start)
-    if (ret == ERR_DATALENGTH || val.MassPM1 == 0 ) {  
+    if (ret == ERR_DATALENGTH || val.MassPM1 == 0 ) {
 
         if (error_cnt++ > 3) {
-          ErrtoMess("Error during reading values: ",ret);
+          ErrtoMess((char *) "Error during reading values: ",ret);
           return(false);
         }
         delay(1000);
@@ -382,7 +345,7 @@ bool read_all()
 
     // if other error
     else if(ret != ERR_OK) {
-      ErrtoMess("Error during reading values: ",ret);
+      ErrtoMess((char *) "Error during reading values: ",ret);
       return(false);
     }
 
@@ -390,13 +353,13 @@ bool read_all()
 
   // often seen that the first reading to be "out of bounds". so we skip it
   if (first) { first = false; return(true); }
-  
+
   // save values
   aqi.Capture(val.MassPM2, val.MassPM10);
 
   // if NOT requested show the measurements
   if (! show_measurements) return(true);
-  
+
   // only print header first time
   if (header) {
     Serial.println(F("---------------------Mass --------------------------    ------------------------------ Number ----------------------------------       Partsize"));
@@ -404,17 +367,17 @@ bool read_all()
     Serial.println(F(" PM1.0          PM2.5          PM4.0          PM10           PM0.5          PM1.0          PM2.5          PM4.0          PM10           Typical"));
     header = false;
   }
-  
-  print_aligned((double) val.MassPM1, 8, 5, 15); 
+
+  print_aligned((double) val.MassPM1, 8, 5, 15);
   print_aligned((double) val.MassPM2, 8, 5, 15);
   print_aligned((double) val.MassPM4, 8, 5, 15);
-  print_aligned((double) val.MassPM10, 8, 5, 15);  
-  print_aligned((double) val.NumPM0, 9, 5, 15); 
-  print_aligned((double) val.NumPM1, 9, 5, 15); 
-  print_aligned((double) val.NumPM2, 9, 5, 15); 
-  print_aligned((double) val.NumPM4, 9, 5, 15); 
+  print_aligned((double) val.MassPM10, 8, 5, 15);
+  print_aligned((double) val.NumPM0, 9, 5, 15);
+  print_aligned((double) val.NumPM1, 9, 5, 15);
+  print_aligned((double) val.NumPM2, 9, 5, 15);
+  print_aligned((double) val.NumPM4, 9, 5, 15);
   print_aligned((double) val.NumPM10, 9, 5, 15);
-  print_aligned((double) val.PartSize, 7, 5, 15);  
+  print_aligned((double) val.PartSize, 7, 5, 15);
 
   Serial.print(F("\n"));
 
@@ -426,16 +389,16 @@ bool read_all()
 ///////////////////////////////////////////////////////////////
 
 /**
- * @brief : force an update of RAM values to NVRAM 
- * 
+ * @brief : force an update of RAM values to NVRAM
+ *
  * Performs a double check on the intention, which MUST be entered in capitals
- * 
+ *
  * An end_of_day cycle will be done if at least a one hour of data was captured. The day and hour statistics and count are reset to start.
  */
 void force_upd()
 {
-  while (keyboard_inp("type : FORCE <enter> to update NVRAM and restart hour and day (no = return without update)") == 0);
-   
+  while (keyboard_inp((char *)"type : FORCE <enter> to update NVRAM and restart hour and day (no = return without update)") == 0);
+
   if ((strcmp(keyb,"no") == 0) || (strcmp(keyb,"NO") == 0)){
     Serial.println(F("Cancelled"));
     return;
@@ -457,13 +420,13 @@ void force_upd()
 void set_current_hour()
 {
   uint8_t hour;
-  
+
   // display current hour
   get_current_hour();
- 
+
   if (get_new_number() == 1) {
     hour = (uint8_t) atoi(keyb);
-    
+
     if (hour > 23) {
       Serial.print(hour);
       Serial.println(F(" : invalid hour number. No change"));
@@ -495,34 +458,34 @@ void get_current_hour()
 void read_aqi()
 {
   struct AQI_info r;
-  
+
   // read nvram and calculate AQI
   if ( ! aqi.GetAqi(&r, base)) {
     Serial.println(F("ERROR : No data or NO region selected"));
     return;
   }
-  
+
   disp_region(r.nv._region);
 
-  print_column("PM2.5 and PM10 used :",30);
+  print_column((char *) "PM2.5 and PM10 used :",30);
   if(r.base == YESTERDAY) Serial.println(F("from PREVIOUS day"));
   else Serial.println(F("from HISTORY"));
-  
-  print_column("Air Quality Index calculated:",30);
+
+  print_column((char *) "Air Quality Index calculated:",30);
   Serial.print(r.aqi_index);
   Serial.print(F("  means: "));
   Serial.println(r.aqi_name);
 
-  print_column("The AQI is driven by  :",30);
+  print_column((char *) "The AQI is driven by  :",30);
   if(r.aqi_indicator == PM25) Serial.print(F("PM2.5  value: "));
   else Serial.print(F("PM10   value: "));
   Serial.println(r.aqi_pmvalue);
-  
-  print_column("Current pollution band      :",30);
+
+  print_column((char *) "Current pollution band      :",30);
   Serial.println(r.aqi_bnd);
-  print_column("Current pollution band low  :",30);
+  print_column((char *) "Current pollution band low  :",30);
   Serial.println(r.aqi_bnd_low);
-  print_column("Current pollution band high :",30);
+  print_column((char *) "Current pollution band high :",30);
   Serial.println(r.aqi_bnd_high);
 
   disp_bnd_europe(&r.nv,false);
@@ -530,24 +493,24 @@ void read_aqi()
 
 /**
  * @brief : reset the NVRAM area to zero
- * 
+ *
  * Performs a double check on the intention, which MUST be entered in capitals
  */
 void clear_nvram()
 {
-  while (keyboard_inp("type : CLEAR <enter> to clear NVRAM (no = return without update)") == 0);
-   
+  while (keyboard_inp((char *)"type : CLEAR <enter> to clear NVRAM (no = return without update)") == 0);
+
     if ((strcmp(keyb,"no") == 0) || (strcmp(keyb,"NO") == 0)){
       Serial.println(F("cancelled"));
       return;
     }
-    
+
     else if(strcmp(keyb,"CLEAR") == 0) {
       aqi.SetStats(NULL);
-      Serial.println(F("completed"));
+      Serial.print(F("completed"));
     }
     else {
-      Serial.print(F("Cancelled. Unknown command : "));
+      Serial.print(F("Cancelled unknown command : "));
       Serial.println(keyb);
     }
 }
@@ -559,69 +522,69 @@ void read_Ram()
 {
   struct AQI_stats r;
   byte x;
-  
-  // read Statistics in RAM 
+
+  // read Statistics in RAM
   aqi.ReadRam(&r);
 
   Serial.println(F("\n********** Current HOUR information ***********"));
 
-  print_column("Amount of samples captured this hour:",40);
+  print_column((char *) "Amount of samples captured this hour:",40);
   Serial.println(r._within_hr_cnt);
-  
-  print_column("Total PM2.5 measured this hour : ",40);
+
+  print_column((char *) "Total PM2.5 measured this hour : ",40);
   Serial.print(r._within_hr_25um);
-  
+
   if (r._within_hr_cnt > 0) {
     Serial.print(F("\taverage: " ));
     Serial.print(r._within_hr_25um/r._within_hr_cnt);
   }
-  
-  Serial.println();  
-  print_column("Total PM10 measured this hour  : ",40);
+
+  Serial.println();
+  print_column((char *) "Total PM10 measured this hour  : ",40);
   Serial.print(r._within_hr_10um);
-  
+
   if (r._within_hr_cnt > 0) {
     Serial.print(F("\taverage: " ));
     Serial.print(r._within_hr_10um/r._within_hr_cnt);
   }
-  
-  Serial.println();  
-  print_column("Number of minutes to go   : ",40);
+
+  Serial.println();
+  print_column((char *) "Number of minutes to go   : ",40);
   Serial.println(60 - ((millis() - r._start_hour) / 60000));
 
   Serial.println(F("\n********** Current DAY information ***********"));
 
-  print_column("Number of hours captured:",40);
+  print_column((char *) "Number of hours captured:",40);
   Serial.println(r._daily_cnt);
 
-  print_column("Hours offset:",40);
+  print_column((char *) "Hours offset:",40);
   Serial.println(r._daily_offset);
 
-  print_column("Number of hours to go:",40);
+  print_column((char *) "Number of hours to go:",40);
   Serial.println(24 -(r._daily_offset + r._daily_cnt));
-  
-  print_column("Total PM2.5 measured this day so far:",40);
+
+  print_column((char *) "Total PM2.5 measured this day so far:",40);
   Serial.print(r._daily_25um);
-  
+
   if (r._daily_cnt > 0) {
     Serial.print(F("\taverage: " ));
     Serial.print(r._daily_25um /r._daily_cnt);
   }
-  
+
   Serial.println();
-  print_column("Total PM10 measured this day so far:",40);
+  print_column((char *) "Total PM10 measured this day so far:",40);
   Serial.print(r._daily_10um);
-  
+
   if (r._daily_cnt > 0) {
     Serial.print(F("\taverage: " ));
     Serial.print(r._daily_10um/r._daily_cnt);
   }
 
   Serial.println();
-  print_column("PM2.5 day maximum :",40);
+  print_column((char *) "PM2.5 day maximum :",40);
   Serial.println(r._daily_25um_max);
-  
-  print_column("PM10 day maximum  :",40);
+
+  print_column((char *) "PM10 day maximum  :",40);
   Serial.println(r._daily_10um_max);
 
   disp_bnd_europe(&r, true);
@@ -632,11 +595,11 @@ void read_Ram()
  */
 void disp_region(uint8_t region)
 {
-  print_column("Region selected : ",30);
+  print_column((char *) "Region selected : ",30);
 
   for (byte x = 0 ; x < sizeof(regions)/sizeof(struct AQI_region) ; x++)
   {
-    if (regions[x].ind == region) { 
+    if (regions[x].ind == region) {
       Serial.println(regions[x].name);
       return;
     }
@@ -649,10 +612,10 @@ void disp_region(uint8_t region)
 /**
  * @brief : display europe specific band info
  * @param nn : pointer to structure
- * @bool hour : 
- *   true :  display current hours only. struct AQI_stats is expected 
+ * @bool hour :
+ *   true :  display current hours only. struct AQI_stats is expected
  *   false : also display previous day hours and total days info struct AQI_NVRAM is expected
- * 
+ *
  * This has been done to make it easier to display the Europe only information
  * from a single place
  */
@@ -661,43 +624,43 @@ void disp_bnd_europe(void *nn, bool hour)
   byte x;
 
   Serial.println(F("\n"));
-  print_column("**** Europe only ****",30);
+  print_column((char *) "**** Europe only ****",30);
   for (x = 0; x < 5; x++)  print_column(AQI_CAQI_hrly[x].cat_name,15);
   Serial.println();
 
   if (hour) {
     struct AQI_stats *n = (struct AQI_stats *) nn;
-      
+
     Serial.println();
-    print_column("current day hours _bnd_PM2.5:",30);
+    print_column((char *) "current day hours _bnd_PM2.5:",30);
     for (x = 0; x < 5; x++) print_aligned((double) n->_hrly_bnd_25um[x], 8, 5, 15);
-    
+
     Serial.println();
-    print_column("current day hours _bnd_PM10 :",30);
+    print_column((char *) "current day hours _bnd_PM10 :",30);
     for (x = 0; x < 5; x++) print_aligned((double) n->_hrly_bnd_10um[x], 8, 5, 15);
-  } 
+  }
   else {
     struct AQI_NVRAM *n = (struct AQI_NVRAM *) nn;
 
-    print_column("previous day hours _bnd_PM2.5:",30);
+    print_column((char *) "previous day hours _bnd_PM2.5:",30);
     for (x = 0; x < 5; x++) print_aligned((double) n->_hrly_bnd_25um[x], 8, 5, 15);
-    
+
     Serial.println();
-    print_column("previous day hours _bnd_PM10 :",30);
+    print_column((char *) "previous day hours _bnd_PM10 :",30);
     for (x = 0; x < 5; x++) print_aligned((double) n->_hrly_bnd_10um[x], 8, 5, 15);
-  
+
     Serial.println();
-    print_column("Captured days _bnd_PM2.5 :",30);
+    print_column((char *) "Captured days _bnd_PM2.5 :",30);
     for (x = 0; x < 5; x++) print_aligned((double) n->_daily_bnd_25um[x], 8, 5,15);
-    
+
     Serial.println();
-    print_column("Captured days _bnd_PM10  :",30);
+    print_column((char *) "Captured days _bnd_PM10  :",30);
     for (x = 0; x < 5; x++) print_aligned((double) n->_daily_bnd_10um[x], 8, 5,15);
   }
-  
+
   Serial.println();
 }
- 
+
 /**
  * @brief : read after-day NVRAM values
  */
@@ -705,57 +668,57 @@ void read_nvram()
 {
   // read from NVRAM
   aqi.GetNv(&nv);
-  
+
   Serial.println();
   disp_region(nv._region);
 
-  print_column("Number of days captured :",30);
+  print_column((char *) "Number of days captured :",30);
   Serial.println(nv._cnt);
 
-  print_column("Total PM2.5 measured :",30);
+  print_column((char *) "Total PM2.5 measured :",30);
   Serial.print(nv._25um);
- 
+
   if (nv._cnt > 0) {
    Serial.print(F("\tdaily average: " ));
    Serial.print(nv._25um/nv._cnt);
   }
 
   Serial.println();
-  print_column("Total PM10 measured :",30);  
+  print_column((char *) "Total PM10 measured :",30);
   Serial.print(nv._10um);
-  
+
   if (nv._cnt > 0) {
     Serial.print(F("\tdaily average: " ));
     Serial.print(nv._10um/nv._cnt);
   }
-  
+
   Serial.println();
-  print_column("Value PM2.5 previous day :",30);  
+  print_column((char *) "Value PM2.5 previous day :",30);
   Serial.println(nv._25um_prev);
-  
-  print_column("Value PM10 previous day  :",30);  
+
+  print_column((char *) "Value PM10 previous day  :",30);
   Serial.println(nv._10um_prev);
 
-  print_column("Max value PM2.5 previous day :",30);  
+  print_column((char *) "Max value PM2.5 previous day :",30);
   Serial.println(nv._25um_max);
-  
-  print_column("Max value PM10 previous day  :",30);  
+
+  print_column((char *) "Max value PM10 previous day  :",30);
   Serial.println(nv._10um_max);
 
   disp_bnd_europe(&nv,false);
 }
- 
+
 /**
  * @brief : update the NVRAM values
- * 
+ *
  */
 void write_nvram()
 {
   bool change_done = false;
   uint8_t  x, i;
-  
+
   Serial.println(F("\n****** MEASUREMENT TEMP0RARILY SUSPENDED *************"));
-  
+
   // read from NVRAM
   aqi.GetNv(&nv);
 
@@ -763,8 +726,8 @@ void write_nvram()
   x = yes_or_no();
   if (x == 2) goto write_end;
   if (x == 1) write_region();
-  
-  print_column("\nNumber of days captured :",30);
+
+  print_column((char *) "\nNumber of days captured :",30);
   Serial.println(nv._cnt);
 
   x = get_new_number();
@@ -775,10 +738,10 @@ void write_nvram()
       Serial.println(nv._cnt);
       change_done = true;
   }
-  
-  print_column("\nTotal PM2.5 measured :",30);
+
+  print_column((char *) "\nTotal PM2.5 measured :",30);
   Serial.println(nv._25um);
-  
+
   x = get_new_number();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -786,11 +749,11 @@ void write_nvram()
       Serial.print(F("value will be set to: "));
       Serial.println(nv._25um);
       change_done = true;
-  } 
+  }
 
-  print_column("\nTotal PM10 measured :",30);
+  print_column((char *) "\nTotal PM10 measured :",30);
   Serial.println(nv._10um);
-  
+
   x = get_new_number();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -798,11 +761,11 @@ void write_nvram()
       Serial.print(F("value will be set to: "));
       Serial.println(nv._10um);
       change_done = true;
-  } 
+  }
 
-  print_column("\nValue PM2.5 previous day :",30);  
+  print_column((char *) "\nValue PM2.5 previous day :",30);
   Serial.println(nv._25um_prev);
-  
+
   x = get_new_number();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -811,10 +774,10 @@ void write_nvram()
       Serial.println(nv._25um_prev);
       change_done = true;
   }
-   
-  print_column("\nValue PM10 previous day  :",30);  
+
+  print_column((char *) "\nValue PM10 previous day  :",30);
   Serial.println(nv._10um_prev);
-  
+
   x = get_new_number();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -822,11 +785,11 @@ void write_nvram()
       Serial.print(F("value will be set to: "));
       Serial.println(nv._10um_prev);
       change_done = true;
-  } 
-  
-  print_column("\nMax value PM2.5 previous day :",30);  
+  }
+
+  print_column((char *) "\nMax value PM2.5 previous day :",30);
   Serial.println(nv._25um_max);
-  
+
   x = get_new_number();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -834,11 +797,11 @@ void write_nvram()
       Serial.print(F("value will be set to: "));
       Serial.println(nv._25um_max);
       change_done = true;
-  } 
-  
-  print_column("\nMax value PM10 previous day  :",30);  
+  }
+
+  print_column((char *) "\nMax value PM10 previous day  :",30);
   Serial.println(nv._10um_max);
-  
+
   x = get_new_number();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -846,10 +809,10 @@ void write_nvram()
       Serial.print(F("value will be set to: "));
       Serial.println(nv._10um_max);
       change_done = true;
-  } 
+  }
 
   Serial.println("******************** Europe only ***********************\n");
-  print_column("\nPrevious day hours _bndPM2.5 ",30);
+  print_column((char *) "\nPrevious day hours _bndPM2.5 ",30);
   x = yes_or_no();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -868,7 +831,7 @@ void write_nvram()
       }
   }
 
-  print_column("\nPrevious day hours _bndPM10 ",30);
+  print_column((char *) "\nPrevious day hours _bndPM10 ",30);
   x = yes_or_no();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -887,7 +850,7 @@ void write_nvram()
       }
   }
 
-  print_column("\nCaptured days _bnd_PM2.5 ",30);
+  print_column((char *) "\nCaptured days _bnd_PM2.5 ",30);
   x = yes_or_no();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -906,7 +869,7 @@ void write_nvram()
       }
   }
 
-  print_column("\nCaptured days _bnd_PM10 ",30);
+  print_column((char *) "\nCaptured days _bnd_PM10 ",30);
   x = yes_or_no();
   if (x == 2) goto write_end;
   if (x == 1) {
@@ -924,7 +887,7 @@ void write_nvram()
         }
       }
   }
- 
+
   // write back
   if (change_done) aqi.SetStats(&nv);
 
@@ -940,26 +903,26 @@ void write_region()
     uint8_t x, y;
 
     Serial.println(F("Available regions:\n"));
-    
+
     for (x = 1; x < sizeof(regions)/sizeof(struct AQI_region); x++) {
       Serial.print(regions[x].ind);
-      Serial.print(F(". ")); 
+      Serial.print(F(". "));
       Serial.println(regions[x].name);
     }
 
     Serial.println();
-    
+
     if (get_new_number() != 1) return;
 
     y = (uint8_t) atoi(keyb);
- 
+
     if (y > x-1) {
       Serial.print(y);
       Serial.println(F(" Invalid region. cancelled"));
       return;
     }
-  
-    aqi.SetRegion((region_t) y); 
+
+    aqi.SetRegion((region_t) y);
     Serial.print(F("Region set to "));
     Serial.println(regions[y].name);
 }
@@ -971,7 +934,7 @@ void write_region()
 
 /**
  * @brief : reads yes or NO or cancel
- * 
+ *
  * @return
  *  1 = yes
  *  2 = cancel
@@ -979,17 +942,17 @@ void write_region()
  */
 uint8_t yes_or_no()
 {
-  while (keyboard_inp("Do you want change ? (yes or no or cancel) ") == 0);
+  while (keyboard_inp((char *) "Do you want change ? (yes or no or cancel) ") == 0);
 
   if ((strcmp(keyb,"yes") == 0) || (strcmp(keyb,"YES") == 0)) return 1;
   if ((strcmp(keyb,"cancel") == 0) || (strcmp(keyb,"CANCEL") == 0)) return 2;
-  
+
   return 0;
 }
 
 /**
  * @brief : Tries to obtain a valid number
- * 
+ *
  * @return
  *  0 = not a valid number available
  *  1 = valid number available in keyb-buffer
@@ -998,12 +961,12 @@ uint8_t yes_or_no()
 uint8_t get_new_number()
 {
   uint8_t x;
-  
+
   x = yes_or_no();
-  if (x != 1) return x; 
-  
-  while (keyboard_inp("Enter number (no = return without update)") == 0);
-    
+  if (x != 1) return x;
+
+  while (keyboard_inp((char *) "Enter number (no = return without update)") == 0);
+
   if ((strcmp(keyb,"no") == 0) || (strcmp(keyb,"NO") == 0)){
       Serial.println(F("Cancelled"));
       return 0;
@@ -1011,7 +974,7 @@ uint8_t get_new_number()
 
   // check for valid number/digits
   for (x = 0 ; x < strlen(keyb) ; x++) {
-    
+
     // a '.' can happen in float
     if ( (!isdigit(keyb[x])) && (keyb[x] != '.') )  {
       Serial.print(keyb);
@@ -1025,7 +988,7 @@ uint8_t get_new_number()
 
 /**
  * @brief will print nice aligned columns from string
- * 
+ *
  * @param mess : message to print
  * @param width : total width of column
  */
@@ -1034,16 +997,16 @@ void print_column(char *mess, uint8_t width)
   uint8_t x, l = 0;
 
   if (width > strlen(mess)) l = width - strlen(mess);
- 
+
   Serial.print(mess);
-  
+
   // pad with spaces
-  for (x = 0; x < l ; x++) Serial.print(F(" ")); 
+  for (x = 0; x < l ; x++) Serial.print(F(" "));
 }
 
 /**
  * @brief will print nice aligned columns from value
- * 
+ *
  * @param val  : value to print
  * @param width: total width of value including decimal point
  * @param prec : precision after the decimal point
@@ -1054,7 +1017,7 @@ void print_aligned(double val, signed char width, unsigned char prec, uint8_t w)
   char out[30];
 
   if (w > 30) w = 30;
-  
+
   dtostrf(val, width, prec, out);
   print_column(out, w);
 }
@@ -1077,11 +1040,11 @@ void serialTrigger(char * mess)
 }
 
 /**
- * @brief : prints message one time and reads keyboard input, 
+ * @brief : prints message one time and reads keyboard input,
  * up to <enter> from the serial port.
- * 
- * @param mess : message to display 
- * 
+ *
+ * @param mess : message to display
+ *
  * @return
  * 0 = no complete buffer received
  * x = number of bytes in complete buffer
@@ -1091,7 +1054,7 @@ uint8_t keyboard_inp(char *mess)
   static uint8_t cnt = 0;
   static bool display_mess = true;
   uint8_t ret;
-  
+
   if (display_mess)  {
      Serial.println(mess);
      display_mess = false;
@@ -1100,16 +1063,16 @@ uint8_t keyboard_inp(char *mess)
   while (Serial.available()) {
 
     keyb[cnt] = Serial.read();
-    
+
     // line complete or buffer full
-    if (keyb[cnt] == '\n' || keyb[cnt] == '\r' || cnt == KEYB_BUF) { 
+    if (keyb[cnt] == '\n' || keyb[cnt] == '\r' || cnt == KEYB_BUF) {
       keyb[cnt] = 0x0;     // terminate
       ret = cnt;
       cnt = 0;             // reset pointer
       display_mess = true; // print message next time
       return(ret);
     }
-    
+
     cnt++;
   }
 
