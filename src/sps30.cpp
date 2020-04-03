@@ -7,11 +7,11 @@
  *
  * The library can communicated over different communication channels
  * with the SPS-30 to get and set information. It works with either
- * UART or I2c communication. The I2C link has a number of restrictions.
+ * UART or I2c communication. The I2C link might have a number of restrictions.
  * See detailed document
  *
  * Development environment specifics:
- * Arduino IDE 1.9
+ * Arduino IDE 1.8.12
  *
  * ================ Disclaimer ===================================
  * This program is distributed in the hope that it will be useful,
@@ -43,21 +43,29 @@
  * - added support to detect SAMD I2C buffer size
  *
  * Version 1.3.6 / October 2019
- * - fixed I2C_Max_bytes error when I2C is excluded
+ * - fixed _I2C_Max_bytes error when I2C is excluded
  * - improve receive buffer checks larger than 3 bytes
  *
  * Version 1.3.7 / December 2019
  *  - fixed ESP32 serial connection / flushing
  *
- * version 1.3.8 / January 2020
+ * Version 1.3.8 / January 2020
  *  - optimized the fix from October 2019 for I2C max bytes
  *
- * version 1.3.9 / February 2020
+ * Version 1.3.9 / February 2020
  *  - optimized autodetection for SAMD SERCOM and ESP32 to undef softwareSerial
+ *
+ * Version 1.3.10 / April 2020
+ *  - changed debug message handling
+ *  - added DEBUGSERIAL to define the Serial port for messages
+ *  - some typo's and cosmetic update
+ *  - still backward compatible with earlier sketches
  *********************************************************************
  */
 
 #include "sps30.h"
+#include <stdarg.h>
+#include <stdio.h>
 
 #if !defined INCLUDE_I2C && !defined INCLUDE_UART
 #error you must enable either I2C or UART communication
@@ -92,10 +100,37 @@ SPS30::SPS30(void)
   _started = false;
   memset(Reported,0x1,sizeof(Reported));     // Trigger reading single value cache
 
-  I2C_Max_bytes = 20;                        // version 1.3.8 (only Mass, in case of I2C)
+  _I2C_Max_bytes = 20;                        // version 1.3.8 (only Mass, in case of I2C)
 #if defined INCLUDE_I2C                      // added with version 1.3.0
-  if (I2C_LENGTH >= 64)  I2C_Max_bytes = 40; // total length
+  if (I2C_LENGTH >= 64)  _I2C_Max_bytes = 40; // total length
 #endif
+}
+
+/**
+ * @brief Print debug message if enabled (new in 1.3.10)
+ *
+ */
+int level = 0;          // used to show protocol errors as well
+static char prfbuf[256];
+void SPS30::DebugPrintf(const char *pcFmt, ...)
+{
+    va_list pArgs;
+
+    // detect protocol errors
+    if (_SPS30_Debug > level){
+
+        va_start(pArgs, pcFmt);
+        vsprintf(prfbuf, pcFmt, pArgs);
+        va_end(pArgs);
+
+        if (_SPS30_Debug_Serial == STANDARD)
+            SPS30_DEBUGSERIAL.print(prfbuf);
+        else if (_SPS30_Debug_Serial == SODAQ)
+            SPS30_DEBUGSERIAL_SODAQ.print(prfbuf);
+    }
+
+    // reset check-level
+    level = 0;
 }
 
 /**
@@ -113,7 +148,7 @@ bool SPS30::begin(serial_port port)
 #if defined INCLUDE_I2C
         I2C_init();
 #else
-        printf("I2C communication not enabled\n");
+        DebugPrintf("I2C communication not enabled\n");
         return(false);
 #endif // INCLUDE_I2C
 
@@ -124,7 +159,7 @@ bool SPS30::begin(serial_port port)
 #if defined INCLUDE_UART
         return(setSerialSpeed());
 #else
-        printf("UART communication not enabled\n");
+        DebugPrintf("UART communication not enabled\n");
         return(false);
 #endif // INCLUDE_UART
 
@@ -141,12 +176,11 @@ bool SPS30::begin(serial_port port)
  *  1 : sending and receiving data
  *  2 : 1 +  protocol progress
  */
-void SPS30::EnableDebugging(uint8_t act)
+void SPS30::EnableDebugging(uint8_t act, debug_serial SelectDebugSerial)
 {
     _SPS30_Debug = act;
+    _SPS30_Debug_Serial = SelectDebugSerial;
 }
-
-
 
 /**
  * @brief check if SPS30 sensor is available (read serial number)
@@ -179,11 +213,9 @@ bool SPS30::Instruct(uint8_t type)
 
     if (type == SER_START_FAN_CLEANING)
     {
-        if(_started == false)
+        if ( ! _started )
         {
-            if (_SPS30_Debug){
-                printf("ERROR : Sensor is not in measurement mode\n");
-            }
+            DebugPrintf("ERROR: Sensor is not in measurement mode\n");
             return(false);
         }
     }
@@ -216,6 +248,7 @@ bool SPS30::Instruct(uint8_t type)
 #else
     {}
 #endif // INCLUDE_UART
+
     if (ret == ERR_OK){
 
         if (type == SER_START_MEASUREMENT) {
@@ -227,11 +260,14 @@ bool SPS30::Instruct(uint8_t type)
 
         else if (type == SER_RESET){
             _started = false;
+            Wire.begin();       // some I2C channels need a reset
             delay(2000);
         }
 
         return(true);
     }
+
+    DebugPrintf("instruction failed\n");
     return(false);
 }
 
@@ -281,7 +317,7 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
 #if defined INCLUDE_UART
     {
         // fill buffer to send
-        if (SHDLC_fill_buffer(type) != true) return(ERR_PARAMETER);
+        if ( ! SHDLC_fill_buffer(type) ) return(ERR_PARAMETER);
 
         ret = ReadFromSerial();
 
@@ -312,7 +348,6 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
  *  OK = ERR_OK
  *  else error
  */
-
 uint8_t SPS30::SetAutoCleanInt(uint32_t val)
 {
 
@@ -358,7 +393,6 @@ uint8_t SPS30::SetAutoCleanInt(uint32_t val)
 #endif //INCLUDE_UART
 }
 
-
 /**
  * @brief : get single sensor value
  * @param value : the single value to get
@@ -400,6 +434,8 @@ float SPS30::Get_Single_Value(uint8_t value)
         case v_NumPM10:  return(v.NumPM10);
         case v_PartSize: return(v.PartSize);
     }
+
+    return(0);
 }
 
 /**
@@ -500,8 +536,8 @@ uint8_t SPS30::GetValues(struct sps_values *v)
     uint8_t offset;
 
     // measurement started already?
-    if (_started == false) {
-        if (start() == false) return(ERR_CMDSTATE);
+    if ( !_started ) {
+        if ( ! start() ) return(ERR_CMDSTATE);
     }
 #if defined INCLUDE_I2C
     if (_Sensor_Comms == I2C_COMMS) {
@@ -518,7 +554,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
                 // I2C will provide maximum data bytes depending on
                 // the I2C read_buffer.
 
-                ret = I2C_SetPointer_Read(I2C_Max_bytes);
+                ret = I2C_SetPointer_Read(_I2C_Max_bytes);
                 break;
             }
             else
@@ -546,7 +582,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
         ///           0    1   2    3     4     5
         // check length
         if (_Receive_BUF[4] != 0x28){
-            if(_SPS30_Debug) printf("%d Not enough bytes for all values\n", _Receive_BUF[4]);
+            DebugPrintf("%d Not enough bytes for all values\n", _Receive_BUF[4]);
             return(ERR_DATALENGTH);
         }
     }
@@ -565,7 +601,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
     // I2C will only provide valid data bytes depending on I2C buffer
     // if I2C buffer is less than 64 we only provide MASS info (set in constructor)
     // version 1.3.8 : fixed to correct logic (in case of I2C_COMMS the buffer must be large enough)
-    if (_Sensor_Comms != I2C_COMMS || I2C_Max_bytes > 20)
+    if (_Sensor_Comms != I2C_COMMS || _I2C_Max_bytes > 20)
     {
         v->NumPM0 = byte_to_float(offset + 16);
         v->NumPM1 = byte_to_float(offset + 20);
@@ -667,7 +703,7 @@ bool SPS30::setSerialSpeed()
  * you have to define different pins upfront in order to use serial1 port. */
         case SERIALPORT1:
             if (Serial_RX == 0 || Serial_TX == 0){
-                if (_SPS30_Debug) printf("TX/RX line not defined\n");
+                DebugPrintf("TX/RX line not defined\n");
                 return false;
             }
             Serial1.begin(_Serial_baud, SERIAL_8N1, Serial_RX, Serial_TX, false);
@@ -682,9 +718,10 @@ bool SPS30::setSerialSpeed()
         default:
 
             if (Serial_RX == 0 || Serial_TX == 0){
-                if (_SPS30_Debug) printf("TX/RX line not defined\n");
+                DebugPrintf("TX/RX line not defined\n");
                 return false;
             }
+
             // In case RX and TX are both pin 8, try Serial1 anyway.
             // A way to force-enable Serial1 on some boards.
             if (Serial_RX == 8 && Serial_TX == 8) {
@@ -702,11 +739,11 @@ bool SPS30::setSerialSpeed()
                 swSerial.begin(_Serial_baud);
                 _serial = &swSerial;
   #else
-        if (_SPS30_Debug) printf("No SoftWare Serial on SAMD\n");
+                DebugPrintf("No SoftWare Serial on SAMD\n");
   #endif // NO softserial on SAMD
 
 #else
-                if (_SPS30_Debug) printf("SoftWare Serial not enabled\n");
+                DebugPrintf("SoftWare Serial not enabled\n");
                 return(false);
 #endif //INCLUDE_SOFTWARE_SERIAL
             }
@@ -762,8 +799,8 @@ uint8_t SPS30::ByteUnStuff(uint8_t b)
         case 0x5e: return(0x7e);
 
         default:
-            if (_SPS30_Debug > 1)
-                printf("Incorrect byte Unstuffing. Got: 0x%02X\n",b);
+            level = 1;
+            DebugPrintf("Incorrect byte Unstuffing. Got: 0x%02X\n",b);
             return(0);
     }
 }
@@ -879,10 +916,10 @@ uint8_t SPS30::SendToSerial()
     if (_Send_BUF_Length == 0) return(ERR_DATALENGTH);
 
     if (_SPS30_Debug){
-        printf("Sending: ");
+        DebugPrintf("Sending: ");
         for(i = 0; i < _Send_BUF_Length; i++)
-            printf(" 0x%02X", _Send_BUF[i]);
-        printf("\n");
+            DebugPrintf(" 0x%02X", _Send_BUF[i]);
+        DebugPrintf("\n");
     }
 
     for (i = 0 ; i <_Send_BUF_Length; i++)
@@ -928,14 +965,14 @@ uint8_t SPS30::ReadFromSerial()
     ret = SHDLC_calc_CRC(_Receive_BUF, 1,_Receive_BUF_Length-2);
     if (_Receive_BUF[_Receive_BUF_Length-1] != ret)
     {
-        if (_SPS30_Debug) printf("CRC error. expected 0x%02X, got 0x%02X\n",_Receive_BUF[_Receive_BUF_Length-1], ret);
+        DebugPrintf("CRC error. expected 0x%02X, got 0x%02X\n",_Receive_BUF[_Receive_BUF_Length-1], ret);
         return(ERR_PROTOCOL);
     }
 
     // check status
     if (_Receive_BUF[3] != ERR_OK)
     {
-        if (_SPS30_Debug) printf("%x : state error\n",_Receive_BUF[3]);
+        DebugPrintf("%x : state error\n",_Receive_BUF[3]);
     }
 
     return(_Receive_BUF[3]);
@@ -959,9 +996,8 @@ uint8_t SPS30::SerialToBuffer()
         // prevent deadlock
         if (millis() - startTime > TIME_OUT)
         {
-            if (_SPS30_Debug > 1)
-               printf("TimeOut during reading byte %d\n", i);
-
+            level = 1;
+            DebugPrintf("TimeOut during reading byte %d\n", i);
             return(ERR_TIMEOUT);
         }
 
@@ -973,10 +1009,8 @@ uint8_t SPS30::SerialToBuffer()
             if (i == 0) {
 
                 if (_Receive_BUF[i] != SHDLC_IND){
-
-                    if (_SPS30_Debug > 1)
-                       printf("Incorrect Header. Expected 0x7E got 0x02X\n", _Receive_BUF[i]);
-
+                    level = 1;
+                    DebugPrintf("Incorrect Header. Expected 0x7E got 0x02X\n", _Receive_BUF[i]);
                     return(ERR_PROTOCOL);
                 }
             }
@@ -1000,9 +1034,9 @@ uint8_t SPS30::SerialToBuffer()
                     _Receive_BUF_Length = i;
 
                     if (_SPS30_Debug){
-                       printf("Received: ");
-                       for(i = 0; i < _Receive_BUF_Length+1; i++) printf("0x%02X ",_Receive_BUF[i]);
-                       printf("length: %d\n\n",_Receive_BUF_Length);
+                       DebugPrintf("Received: ");
+                       for(i = 0; i < _Receive_BUF_Length+1; i++) DebugPrintf("0x%02X ",_Receive_BUF[i]);
+                       DebugPrintf("length: %d\n\n",_Receive_BUF_Length);
                     }
 
                     /* if a board can not handle 115K you get uncontrolled input
@@ -1018,7 +1052,7 @@ uint8_t SPS30::SerialToBuffer()
 
             if(i > MAXRECVBUFLENGTH)
             {
-                if (_SPS30_Debug ) printf("\nReceive buffer full\n");
+                DebugPrintf("\nReceive buffer full\n");
                 return(ERR_PROTOCOL);
             }
         }
@@ -1035,7 +1069,7 @@ uint8_t SPS30::SerialToBuffer()
 /**
  * @brief : Return the expected number of valid values read from device
  *
- * The I2C_Max_bytes is depending on the buffer defined in Wire.h
+ * The _I2C_Max_bytes is depending on the buffer defined in Wire.h
  *
  * Return
  *  4 = Valid Mass values only
@@ -1043,7 +1077,7 @@ uint8_t SPS30::SerialToBuffer()
  */
 uint8_t SPS30::I2C_expect()
 {
-    if (I2C_Max_bytes == 20) return(4);
+    if (_I2C_Max_bytes == 20) return(4);
     return(10);
 }
 
@@ -1108,10 +1142,10 @@ uint8_t SPS30::I2C_SetPointer()
     if (_Send_BUF_Length == 0) return(ERR_DATALENGTH);
 
     if (_SPS30_Debug){
-        printf("I2C Sending: ");
+        DebugPrintf("I2C Sending: ");
         for(byte i = 0; i < _Send_BUF_Length; i++)
-            printf(" 0x%02X", _Send_BUF[i]);
-        printf("\n");
+            DebugPrintf(" 0x%02X", _Send_BUF[i]);
+        DebugPrintf("\n");
     }
 
     Wire.beginTransmission(SPS30_ADDRESS);
@@ -1136,7 +1170,7 @@ uint8_t SPS30::I2C_SetPointer_Read(uint8_t cnt, bool chk_zero)
     // set pointer
     ret = I2C_SetPointer();
     if (ret != ERR_OK) {
-        if (_SPS30_Debug) printf("Can not set pointer\n");
+        DebugPrintf("Can not set pointer\n");
         return(ret);
     }
 
@@ -1144,15 +1178,14 @@ uint8_t SPS30::I2C_SetPointer_Read(uint8_t cnt, bool chk_zero)
     ret = I2C_ReadToBuffer(cnt, chk_zero);
 
     if (_SPS30_Debug){
-       printf("I2C Received: ");
-       for(byte i = 0; i < _Receive_BUF_Length; i++) printf("0x%02X ",_Receive_BUF[i]);
-       printf("length: %d\n\n",_Receive_BUF_Length);
+       DebugPrintf("I2C Received: ");
+       for(byte i = 0; i < _Receive_BUF_Length; i++)
+                    DebugPrintf("0x%02X ",_Receive_BUF[i]);
+       DebugPrintf("length: %d\n\n",_Receive_BUF_Length);
     }
 
     if (ret != ERR_OK) {
-        if (_SPS30_Debug){
-            printf("Error during reading from I2C: 0x%02X\n", ret);
-        }
+        DebugPrintf("Error during reading from I2C: 0x%02X\n", ret);
     }
     return(ret);
 }
@@ -1186,9 +1219,7 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
         if( i == 3) {
 
             if (data[2] != I2C_calc_CRC(&data[0])){
-                if (_SPS30_Debug){
-                    printf("I2C CRC error: Expected 0x%02X, calculated 0x%02X\n",data[2] & 0xff,I2C_calc_CRC(&data[0]) &0xff);
-                }
+                DebugPrintf("I2C CRC error: Expected 0x%02X, calculated 0x%02X\n",data[2] & 0xff,I2C_calc_CRC(&data[0]) & 0xff);
                 return(ERR_PROTOCOL);
             }
 
@@ -1207,19 +1238,18 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
     }
 
     if (i != 0) {
-        if (_SPS30_Debug) printf("Error: Data counter %d\n",i);
+        DebugPrintf("Error: Data counter %d\n",i);
         while (j < i) _Receive_BUF[_Receive_BUF_Length++] = data[j++];
     }
 
     if (_Receive_BUF_Length == 0) {
-        if (_SPS30_Debug)  printf("Error: Received NO bytes\n");
+        DebugPrintf("Error: Received NO bytes\n");
         return(ERR_PROTOCOL);
     }
 
     if (_Receive_BUF_Length == count) return(ERR_OK);
 
-    if (_SPS30_Debug)
-        printf("Error: Expected bytes : %d, Received bytes %d\n", count,_Receive_BUF_Length);
+    DebugPrintf("Error: Expected bytes : %d, Received bytes %d\n", count,_Receive_BUF_Length);
 
     return(ERR_DATALENGTH);
 }

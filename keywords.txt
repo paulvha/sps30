@@ -1,6 +1,6 @@
-#######################################
+﻿#######################################
 # Syntax Coloring Map
-# SPS30  //paulvha January 2019
+# SPS30  //paulvha April 2020
 #######################################
 
 #######################################
@@ -20,6 +20,7 @@ NumPM2	KEYWORD1
 NumPM4	KEYWORD1
 NumPM10	KEYWORD1
 PartSize	KEYWORD1
+SODAQ	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -72,3 +73,4 @@ SERIALPORT	LITERAL1
 SERIALPORT1	LITERAL1
 SERIALPORT2	LITERAL1
 SERIALPORT3	LITERAL1
+

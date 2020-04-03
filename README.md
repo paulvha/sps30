@@ -88,10 +88,16 @@ Please see the description in the top of the sketch and read the documentation (
  * optimized the fix from October 2019 for I2C max bytes
 
 ### version 1.3.9 / February 2020
- *  optimized autodetection for SAMD SERCOM and ESP32 to undef softwareSerial
+ * optimized autodetection for SAMx1D SERCOM and ESP32 to undef softwareSerial
 
-### version 1.3.10 / March 2020
- *  Updated examples for new compile errors and warnings wih IDE 1.8.12
+### version 1.3.10 / April 2020
+ * Updated examples for new compile errors and warnings wih IDE 1.8.12
+ * support for SODAQ AFF/SARA board (examples on ![https://github.com/paulvha/sodaq]([https://github.com/paulvha/sodaq)
+ * changed debug message handling
+ * Added DEBUGSERIAL to define the Serial port for messages
+ * fixed some typo's and cosmetic update
+ * still fully backward compatible with earlier sketches
+ * updated documentation
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

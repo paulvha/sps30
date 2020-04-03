@@ -8,7 +8,7 @@
  * The I2C link has a number of restrictions. See detailed document
  *
  * Development environment specifics:
- * Arduino IDE 1.9
+ * Arduino IDE 1.8.12
  *
  *
  * This program is distributed in the hope that it will be useful,
@@ -52,10 +52,29 @@
  *
  * version 1.3.9 / February 2020
  *  - optimized autodetection for SAMD SERCOM and ESP32 to undef softwareSerial
+ *  - removed to typedef warnings
+ *
+ * version 1.3.10 / April 2020
+ *  - changed debug message handling
+ *  - added DEBUGSERIAL to define the Serial port for messages
+ *  - some typo's and cosmetic update
+ *  - still backward compatible with earlier sketches
+ *
  *********************************************************************
 */
 #ifndef SPS30_H
 #define SPS30_H
+
+/**
+ * select debug serial (1.3.10)
+ */
+#define SPS30_DEBUGSERIAL Serial            // default
+#define SPS30_DEBUGSERIAL_SODAQ SerialUSB
+
+enum debug_serial {
+    STANDARD = 0,                           // default
+    SODAQ = 1
+};
 
 /**
  * To EXCLUDE I2C communication, maybe for resource reasons,
@@ -65,7 +84,7 @@
 
 /**
  * To EXCLUDE the serial communication, maybe for resource reasons
- * as you board does not have a seperate serial, comment out the line below
+ * as your board does not have a seperate serial, comment out the line below
  * It will also exclude Software_serial
  */
 #define INCLUDE_UART 1
@@ -91,7 +110,7 @@
 //#define SOFTI2C_ESP32 1
 
 #include "Arduino.h"                // Needed for Stream
-#include "printf.h"
+//#include "printf.h"
 
 /**
  *  Auto detect that some boards have low memory. (like Uno)
@@ -156,7 +175,7 @@
       /* version 1.3.2 added support for SAMD SERCOM detection */
       /* version 1.3.9 autodetection for SAMD SERCOM and ESP32 to undef softwareSerial */
 
-      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32    // NO softserial on SAMD & ESP32
+      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32
         #undef  INCLUDE_SOFTWARE_SERIAL
       #else
          #include <SoftwareSerial.h>        // softserial
@@ -176,9 +195,10 @@
  *   NONE                   No port defined
  *
  * Softserial has been left in as an option, but as the SPS30 is only
- * working on 115K the connection will probably NOT work on any device.
+ * working on 115K the connection will probably NOT work on most devices.
  */
-typedef enum serial_port {
+
+enum serial_port {
     I2C_COMMS = 0,
     SOFTWARE_SERIAL = 1,
     SERIALPORT = 2,
@@ -189,8 +209,7 @@ typedef enum serial_port {
 };
 
 /* structure to return all values */
-typedef struct sps_values
-{
+struct sps_values {
     float   MassPM1;        // Mass Concentration PM1.0 [μg/m3]
     float   MassPM2;        // Mass Concentration PM2.5 [μg/m3]
     float   MassPM4;        // Mass Concentration PM4.0 [μg/m3]
@@ -214,7 +233,6 @@ typedef struct sps_values
 #define v_NumPM4 8
 #define v_NumPM10 9
 #define v_PartSize 10
-
 
 /* needed for conversion float IEE754 */
 typedef union {
@@ -247,7 +265,8 @@ typedef union {
 
 #else
 #define MAXRECVBUFLENGTH 128
-typedef struct Description {
+
+struct Description {
     uint8_t code;
     char    desc[80];
 };
@@ -272,7 +291,7 @@ typedef struct Description {
 
 #define SHDLC_IND   0x7e                   // header & trailer
 #define TIME_OUT    5000                   // timeout to prevent deadlock read
-#define RX_DELAY_MS 200                    // wait between write and read
+#define RX_DELAY_MS 100                    // wait between write and read
 
 /*************************************************************/
 /* I2C COMMUNICATION INFORMATION  */
@@ -303,15 +322,19 @@ class SPS30
     *  0 : no debug message
     *  1 : sending and receiving data
     *  2 : 1 +  protocol progress
+    *
+    * @param SelectDebugSerial : select Serial port (see top of SPS30.h)
+    *  This will allow to select a different port than Serial for debug
+    *  messages. As real example an SODAQ NB board is using SerialUSB.
     */
-    void EnableDebugging(uint8_t act);
+    void EnableDebugging(uint8_t act, debug_serial SelectDebugSerial = STANDARD);
 
     /**
      * @brief Initialize the communication port
      *
      * @param port : communication channel to be used (see sps30.h)
      */
-    bool begin(serial_port port = SERIALPORT2); //If user doesn't specify Serial2 will be used
+    bool begin(serial_port port = SERIALPORT2); // If user doesn't specify Serial2 will be used
 
     /**
      * @brief : Perform SPS-30 instructions
@@ -335,6 +358,9 @@ class SPS30
 
     /**
      * @brief : retrieve device information from the SPS-30
+     *
+     * On none of the device so far Article code and Product name are
+     * available.
      */
     uint8_t GetSerialNumber(char *ser, uint8_t len) {return(Get_Device_info( SER_READ_DEVICE_SERIAL_NUMBER, ser, len));}
     uint8_t GetArticleCode(char *ser, uint8_t len)  {return(Get_Device_info( SER_READ_DEVICE_ARTICLE_CODE, ser, len));}
@@ -382,6 +408,7 @@ class SPS30
 #endif
 
   private:
+    void DebugPrintf(const char *pcFmt, ...);
 
     /** shared variables */
     uint8_t _Receive_BUF[MAXRECVBUFLENGTH]; // buffers
@@ -390,9 +417,10 @@ class SPS30
     uint8_t _Send_BUF_Length;
     serial_port _Sensor_Comms;  // comunication channel to use
     int _SPS30_Debug;           // program debug level
+    debug_serial _SPS30_Debug_Serial;    // serial debug-port to use
     bool _started;              // indicate the measurement has started
     uint8_t Reported[11];       // use as cache indicator single value
-    uint8_t I2C_Max_bytes;      // moved version 1.3.8
+    uint8_t _I2C_Max_bytes;      // moved version 1.3.8
 
     /** shared supporting routines */
     uint8_t Get_Device_info(uint8_t type, char *ser, uint8_t len);
