@@ -69,11 +69,16 @@
  * select debug serial (1.3.10)
  */
 #define SPS30_DEBUGSERIAL Serial            // default
+
+#if defined(ARDUINO_SODAQ_AUTONOMO) || defined(ARDUINO_SODAQ_SARA) || defined(ARDUINO_SODAQ_SFF)
 #define SPS30_DEBUGSERIAL_SODAQ SerialUSB
+#endif
 
 enum debug_serial {
     STANDARD = 0,                           // default
+#ifdef SPS30_DEBUGSERIAL_SODAQ
     SODAQ = 1
+#endif
 };
 
 /**

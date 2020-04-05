@@ -99,6 +99,9 @@ Please see the description in the top of the sketch and read the documentation (
  * still fully backward compatible with earlier sketches
  * updated documentation
 
+### version 1.3.10a / April 2020
+ * fixed compile debug print
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 

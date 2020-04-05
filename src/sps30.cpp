@@ -125,8 +125,11 @@ void SPS30::DebugPrintf(const char *pcFmt, ...)
 
         if (_SPS30_Debug_Serial == STANDARD)
             SPS30_DEBUGSERIAL.print(prfbuf);
+
+#ifdef SPS30_DEBUGSERIAL_SODAQ
         else if (_SPS30_Debug_Serial == SODAQ)
             SPS30_DEBUGSERIAL_SODAQ.print(prfbuf);
+#endif
     }
 
     // reset check-level
