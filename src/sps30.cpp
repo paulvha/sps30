@@ -60,6 +60,24 @@
  *  - added DEBUGSERIAL to define the Serial port for messages
  *  - some typo's and cosmetic update
  *  - still backward compatible with earlier sketches
+ *
+ * version 1.4  / April 2020
+ *  - Based on the new SPS30 datasheet (March 2020) a number of functions
+ *    are added or updated. Some are depending on the new firmware.
+ *  - Added sleep() and wakeup(). Requires firmware 2.0
+ *  - Added GetVersion() to obtain the current firmware / hardware info
+ *  - Added GetStatusReg() to obtain SPS30 status information. Requires firmware 2.2
+ *  - Added structure SPS30_version for GetVersion
+ *  - Added internal function to check on correct firmware level
+ *  - Added INCLUDE_FWCHECK in SPS30.h to enable /disable check.
+ *  - Changed probe() to obtain firmware levels instead of serial number.
+ *  - Changed on how to obtaining product-type
+ *  - Depreciated GetArticleCode(). Still supporting backward compatibility
+ *  - Update the example sketches to include version levels
+ *  - Added example11 for sleep(), wakeup() and GetStatusreg()
+ *  - Update to documentation
+ *  - Added the new datasheet in extras-folder
+ *
  *********************************************************************
  */
 
@@ -73,7 +91,7 @@
 
 #if not defined SMALLFOOTPRINT
 /* error descripton */
-struct Description ERR_desc[10] =
+struct Description ERR_desc[11] =
 {
   {ERR_OK, "All good"},
   {ERR_DATALENGTH, "Wrong data length for this command (too much or little data)"},
@@ -84,6 +102,7 @@ struct Description ERR_desc[10] =
   {ERR_CMDSTATE, "Command not allowed in current state"},
   {ERR_TIMEOUT, "No response received within timeout period"},
   {ERR_PROTOCOL, "Protocol error"},
+  {ERR_FIRMWARE, "Not supported on this SPS30 firmware level"},
   {0xff, "Unknown Error"}
 };
 #endif // SMALLFOOTPRINT
@@ -98,9 +117,12 @@ SPS30::SPS30(void)
   _SPS30_Debug = 0;
   _Sensor_Comms = NONE;
   _started = false;
+  _sleep = false;
+  _FW_Major = _FW_Minor = 0;
+
   memset(Reported,0x1,sizeof(Reported));     // Trigger reading single value cache
 
-  _I2C_Max_bytes = 20;                        // version 1.3.8 (only Mass, in case of I2C)
+  _I2C_Max_bytes = 20;                       // version 1.3.8 (only Mass, in case of I2C)
 #if defined INCLUDE_I2C                      // added with version 1.3.0
   if (I2C_LENGTH >= 64)  _I2C_Max_bytes = 40; // total length
 #endif
@@ -190,12 +212,188 @@ void SPS30::EnableDebugging(uint8_t act, debug_serial SelectDebugSerial)
  *
  * Return:
  *   true on success else false
+ *
+ * changed in version 1.4 to get firmware level instead of serial.
  */
 bool SPS30::probe() {
-    char buf[32];
 
-    if (GetSerialNumber(buf, 32) == ERR_OK) return(true);
+    SPS30_version v;
+
+    if (GetVersion(&v) == ERR_OK) {
+        _FW_Major = v.major;
+        _FW_Minor = v.minor;
+        return(true);
+    }
+
     return(false);
+}
+
+/**
+ * Added version 1.4
+ *
+ * Described in datasheet SPS30 March 2020, page 7
+ *
+ * @brief Check Firmware level
+ *
+ * @param  Major : minimum Major level of firmware
+ * @param  Minor : minimum Minor level of firmware
+*
+ * return
+ *  True if SPS30 has required firmware
+ *  False does not have required firmware level.
+ *
+ * Certain functions are only supported in a higher firmware level
+ * The SPS30 datasheet March 2020, shows the function that have been
+ * slipped streamed and the minimum level required.
+ *
+ * This check can be disabled by setting INCLUDE_FWCHECK to zero in
+ * sps30.h
+ */
+bool SPS30::FWCheck(uint8_t major, uint8_t minor) {
+
+    if (! INCLUDE_FWCHECK) return(true);
+
+    // do we have the current FW level
+    if (_FW_Major == 0) {
+        if (! probe()) return (false);
+    }
+
+    // if requested level is HIGHER than current
+    if (major > _FW_Major) return(false);
+    if (minor > _FW_Minor) return(false);
+
+    return(true);
+}
+
+/**
+ * Added version 1.4  REQUIRES FIRMWARE LEVEL 2.2
+ *
+ * Described in datasheet SPS30 March 2020, page 7
+ *
+ * @brief Read status register
+ *
+ * @param  *status
+ *  return status as an 'or':
+ *   STATUS_OK = 0,
+ *   STATUS_SPEED_ERROR = 1,
+ *   STATUS_SPEED_CURRENT_ERROR = 2,
+ *   STATUS_FAN_ERROR = 4
+ *
+ * Return obtain result
+ * return
+ *  ERR_OK = ok
+ *  else error
+ */
+
+uint8_t SPS30::GetStatusReg(uint8_t *status) {
+    uint8_t ret, offset;
+
+    *status = 0x0;
+
+    // check for minimum Firmware level
+    if(! FWCheck(2,2)) return(ERR_FIRMWARE);
+
+#if defined INCLUDE_I2C
+    if ( _Sensor_Comms == I2C_COMMS) {
+
+        I2C_fill_buffer(I2C_READ_STATUS_REGISTER);
+
+        ret = I2C_SetPointer_Read(5,false);
+
+        offset = 0;
+    }
+    else
+#endif // INCLUDE_I2C
+
+#if defined INCLUDE_UART
+    {
+        // fill buffer to send
+        if ( ! SHDLC_fill_buffer(SER_READ_STATUS) ) return(ERR_PARAMETER);
+
+        ret = ReadFromSerial();
+        offset = 5;
+    }
+#else
+    {}
+#endif // INCLUDE_UART
+
+    if (_Receive_BUF[offset + 1] & 0b00100000) *status |= STATUS_SPEED_ERROR;
+    if (_Receive_BUF[offset + 3] & 0b00100000) *status |= STATUS_LASER_ERROR;
+    if (_Receive_BUF[offset + 3] & 0b00010000) *status |= STATUS_FAN_ERROR;
+
+    return(ret);
+}
+
+/**
+ * @brief Set SPS30 to sleep or wakeup
+ *
+ * @param mode
+ *  SER_WAKEUP to wakeup
+ *  SER_SLEEP to set to sleep
+ *
+ * Requires Firmware level 2.0
+ *
+ * defined in datasheet SPS30 March 2020 page 5
+ *
+ * Return
+ *  ERR_OK = ok
+ *  else error
+ */
+
+uint8_t SPS30::SetOpMode( uint8_t mode )
+{
+    // check for minimum Firmware level
+    if(! FWCheck(2,0)) return(ERR_FIRMWARE);
+
+    // set to sleep
+    if (mode == SER_SLEEP) {
+
+        // if already in sleep
+        if (_sleep) return(ERR_OK);
+
+        // if not idle
+        if (_started) {
+            if (! stop()) return(ERR_PROTOCOL);
+            _WasStarted = true;
+        }
+        else
+            _WasStarted = false;
+
+        // go to sleep
+        if (! Instruct(SER_SLEEP))  return(ERR_PROTOCOL);
+        _sleep = true;
+    }
+    // wake-up
+    else if (mode == SER_WAKEUP) {
+
+        // if not in sleep
+        if (! _sleep) return(ERR_OK);
+
+        // send 2 x WAKE-up on I2C to toggle SPS30
+        if (_Sensor_Comms == I2C_COMMS){
+            if (! Instruct(SER_WAKEUP))  return(ERR_PROTOCOL);
+        }
+        else {  // on serial send 0xff
+            _serial->write(0xff);
+        }
+
+        // give some time for the SPS30 to act on toggle as WAKEUP must be sent in 100mS
+        delay(10);
+
+        if (! Instruct(SER_WAKEUP))  return(ERR_PROTOCOL);
+
+        // indicate not in sleep anymore
+        _sleep = false;
+
+        // was started before instructed to go to sleep
+        if (_WasStarted) {
+            if(! start()) return(ERR_PROTOCOL);
+        }
+    }
+    else
+        return(ERR_PARAMETER);
+
+    return(ERR_OK);
 }
 
 /**
@@ -205,6 +403,8 @@ bool SPS30::probe() {
  *  SER_STOP_MEASUREMENT    Stop measurement
  *  SER_RESET               Perform reset
  *  SER_START_FAN_CLEANING  start cleaning
+ *  SER_SLEEP               set to sleep
+ *  SER_WAKE                sent wakeup
  *
  * Return
  *  true = ok
@@ -233,6 +433,10 @@ bool SPS30::Instruct(uint8_t type)
             I2C_fill_buffer(I2C_RESET);
         else if(type == SER_START_FAN_CLEANING)
             I2C_fill_buffer(I2C_START_FAN_CLEANING);
+        else if(type == SER_SLEEP)
+            I2C_fill_buffer(I2C_SLEEP);
+        else if(type == SER_WAKEUP)
+            I2C_fill_buffer(I2C_WAKEUP);
         else
             return(ERR_PARAMETER);
 
@@ -275,11 +479,57 @@ bool SPS30::Instruct(uint8_t type)
 }
 
 /**
+ * @brief Read version info
+ *
+ * return
+ *  ERR_OK = ok
+ *  else error
+ */
+uint8_t SPS30::GetVersion(SPS30_version *v)
+{
+    uint8_t ret, offset;
+    memset(v, 0x0, sizeof(struct SPS30_version));
+
+#if defined INCLUDE_I2C
+    if ( _Sensor_Comms == I2C_COMMS) {
+
+        I2C_fill_buffer(I2C_READ_VERSION);
+
+        ret = I2C_SetPointer_Read(2,false);
+
+        v->major = _Receive_BUF[0];
+        v->minor = _Receive_BUF[1];
+    }
+    else
+#endif // INCLUDE_I2C
+
+#if defined INCLUDE_UART
+    {
+        // fill buffer to send
+        if ( ! SHDLC_fill_buffer(SER_READ_VERSION) ) return(ERR_PARAMETER);
+
+        ret = ReadFromSerial();
+        offset = 5;
+        v->major = _Receive_BUF[offset + 0];
+        v->minor = _Receive_BUF[offset + 1];
+        v->HW_version = _Receive_BUF[offset + 3];
+        v->SHDLC_major = _Receive_BUF[offset + 5];
+        v->SHDLC_minor = _Receive_BUF[offset + 6];
+    }
+#else
+    {}
+#endif // INCLUDE_UART
+
+    v->DRV_major = DRIVER_MAJOR;
+    v->DRV_minor = DRIVER_MINOR;
+    return(ret);
+}
+
+/**
  * @brief General Read device info
  *
  * @param type:
- *  Product Name  : SER_READ_DEVICE_PRODUCT_NAME
- *  Article Code  : SER_READ_DEVICE_ARTICLE_CODE
+ *  Product Name  : SER_READ_DEVICE_PRODUCT_TYPE
  *  Serial Number : SER_READ_DEVICE_SERIAL_NUMBER
  *
  * @param ser     : buffer to hold the read result
@@ -298,20 +548,25 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
     if (_Sensor_Comms == I2C_COMMS) {
 
         // Serial or article code
-        if (type == SER_READ_DEVICE_SERIAL_NUMBER)
+        if (type == SER_READ_DEVICE_SERIAL_NUMBER) {
             I2C_fill_buffer(I2C_READ_SERIAL_NUMBER);
 
-        else if(type == SER_READ_DEVICE_ARTICLE_CODE)
-            I2C_fill_buffer(I2C_READ_ARTICLE_CODE);
-
-        // product name is not available on I2C
-        else {
-            for (i = 0; i < len ; i++) ser[i] = 0x0;
-            return(ERR_OK);
+            // true = check zero termination
+            ret =  I2C_SetPointer_Read(len,true);
         }
 
-        // true = check zero termination
-        ret =  I2C_SetPointer_Read(len,true);
+        // CHANGED 1.4
+        // I2C_READ_PRODUCT_TYPE: always “00080000” without terminating
+        // null-character, recommended to use as product identifier
+        else if(type == SER_READ_DEVICE_PRODUCT_TYPE){
+            I2C_fill_buffer(I2C_READ_PRODUCT_TYPE);
+
+            ret =  I2C_SetPointer_Read(8,false);
+            _Receive_BUF[8] = 0x0;   // terminate
+        }
+        else
+            return (ERR_PARAMETER);
+
         offset = 0;
     }
     else
@@ -341,11 +596,9 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
     return(ERR_OK);
 }
 
-
 /**
  * @brief : SET the auto clean interval
  * @param val : The new interval value
- *
  *
  * Return:
  *  OK = ERR_OK
@@ -363,7 +616,7 @@ uint8_t SPS30::SetAutoCleanInt(uint32_t val)
 
         if (I2C_SetPointer() == ERR_OK)
         {
-            /* Datasheet page 15: Note that after writing a new interval, this will be activated immediately.
+            /** Datasheet page 15: Note that after writing a new interval, this will be activated immediately.
              * However, if the interval register is read out after setting the new value, the previous value
              * is returned until the next start/reset of the sensor module.
              *
@@ -833,18 +1086,25 @@ bool SPS30::SHDLC_fill_buffer(uint8_t command, uint32_t parameter)
         case SER_START_MEASUREMENT:
             _Send_BUF[i++] = 2;     // length
             _Send_BUF[i++] = 0x1;
-            _Send_BUF[i++] = 0x3;
+            _Send_BUF[i++] = START_MEASURE_FLOAT;   // CHANGED 1.4
+            break;
+
+        case SER_READ_STATUS:
+            _Send_BUF[i++] = 1;     // length
+            _Send_BUF[i++] = 0;     // do NOT clear bits after reading
             break;
 
         case SER_STOP_MEASUREMENT:
         case SER_READ_MEASURED_VALUE:
         case SER_START_FAN_CLEANING:
+        case SER_READ_VERSION:
         case SER_RESET:
+        case SER_WAKEUP:
+        case SER_SLEEP:
             _Send_BUF[i++] = 0;     // length
             break;
 
-        case SER_READ_DEVICE_PRODUCT_NAME:
-        case SER_READ_DEVICE_ARTICLE_CODE:
+        case SER_READ_DEVICE_PRODUCT_TYPE:
         case SER_READ_DEVICE_SERIAL_NUMBER:
             _Send_BUF[2] = SER_READ_DEVICE_INFO;
             _Send_BUF[i++] = 1;     // length
@@ -862,7 +1122,7 @@ bool SPS30::SHDLC_fill_buffer(uint8_t command, uint32_t parameter)
 
             _Send_BUF[i++] = 5;  // length
             _Send_BUF[i++] = 0;  // Subcommand, this value must be set to 0x00
-             tmp = parameter >> 24 & 0xff;  // change order depending on the indians...
+             tmp = parameter >> 24 & 0xff;  // change order depending on the endians...
              i = ByteStuff(tmp, i);
              tmp = parameter >> 16 & 0xff;
              i = ByteStuff(tmp, i);
@@ -1112,7 +1372,7 @@ void SPS30::I2C_fill_buffer(uint16_t cmd, uint32_t interval)
     switch(cmd) {
 
         case I2C_START_MEASUREMENT:
-            _Send_BUF[i++] = 0x3;       //2 Measurement-Mode, this value must be set to 0x03
+            _Send_BUF[i++] = START_MEASURE_FLOAT;     // Measurement-Mode
             _Send_BUF[i++] = 0x00;      //3 dummy byte
             _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]);
             break;
@@ -1217,7 +1477,7 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
     while (Wire.available()) { // wait till all arrive
 
         data[i++] = Wire.read();
-
+//DebugPrintf("data 0x%02X\n", data[i-1]);
         // 2 bytes RH, 1 CRC
         if( i == 3) {
 

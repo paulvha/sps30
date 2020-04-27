@@ -7,6 +7,9 @@
  *  Version 1.1.1 Paul van Haastrecht / March 2020
  *  - Fixed compile errors and warnings.
  *
+ *  Version 1.1.2 Paul van Haastrecht / March 2020
+ *  - added versions level to GetDeviceInfo()
+ *
  *  =========================  Highlevel description ================================
  *
  *  This basic reading example sketch will connect to an SPS30 and SCD30 for
@@ -137,7 +140,7 @@
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 162 there are configuration parameters for the program
+ *  From line 172 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -305,6 +308,7 @@ void GetDeviceInfo()
 {
   char buf[32];
   uint8_t ret;
+  SPS30_version v;
 
   //try to read serial number
   ret = sps30.GetSerialNumber(buf, 32);
@@ -327,16 +331,33 @@ void GetDeviceInfo()
   else
     ErrtoMess((char *) "could not get product name.", ret);
 
-  // try to get article code
-  ret = sps30.GetArticleCode(buf, 32);
-  if (ret == ERR_OK)  {
-    Serial.print(F("\tArticle code  : "));
 
-    if(strlen(buf) > 0)  Serial.println(buf);
-    else Serial.println(F("not available"));
+  // try to get version info
+  ret = sps30.GetVersion(&v);
+  if (ret != ERR_OK) {
+    Serial.println(F("Can not read version info"));
+    return;
   }
-  else
-    ErrtoMess((char *) "could not get Article code .", ret);
+
+  Serial.print("Firmware level: ");
+  Serial.print(v.major);
+  Serial.print(".");
+  Serial.println(v.minor);
+
+  if (SP30_COMMS != I2C_COMMS) {
+    Serial.print("Hardware level: ");
+    Serial.println(v.HW_version);
+
+    Serial.print("SHDLC protocol: ");
+    Serial.print(v.SHDLC_major);
+    Serial.print(".");
+    Serial.println(v.SHDLC_minor);
+  }
+
+  Serial.print("Library level : ");
+  Serial.print(v.DRV_major);
+  Serial.print(".");
+  Serial.println(v.DRV_minor);
 }
 
 /**

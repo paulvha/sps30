@@ -1,20 +1,34 @@
 /************************************************************************************
- *  Copyright (c) January 2019, version 1.0     Paul van Haastrecht
+ *  Copyright (c) April 2020, version 1.0     Paul van Haastrecht
  *
- *  Version 1.1 Paul van Haastrecht
- *  - Changed the I2C information / setup.
- *
- *  Version 1.1.1 Paul van Haastrecht / March 2020
- *  - Fixed compile errors and warnings.
- *
- *  Version 1.1.2 Paul van Haastrecht / March 2020
- *  - added versions level to GetDeviceInfo()
+ *  Version 1.0 Paul van Haastrecht / April 2020
+ *  - added Sleep(), wakeup() and reading status()
  *
  *  =========================  Highlevel description ================================
  *
- *  This basic reading example sketch will connect to an SPS-30 for getting data and
- *  display the available data. It will also try to find an DS18x20 with onewire
+ *  This basic reading example sketch will connect to an SPS30 for getting data and
+ *  display the available data. 
+ *  
+ *  New firmware levels have been slipped streamed into the SPS30
+ *  The datasheet from March 2020 shows added / updated functions on new
+ *  firmware level: sleep(), wakeup(), device status register are new
  *
+ *  On serial connection the new functions are accepted and positive 
+ *  acknowledged on lower level firmware, but execution does not seem 
+ *  to happen or should be expected.
+ *
+ *  On I2C reading Status register gives an error on lower level firmware.
+ *  Sleep and wakeup are accepted and positive acknowledged on lower level 
+ *  firmware, but execution does not seem to happen or should be expected.
+ *  
+ *  This sketch demonstates the usage sleep(), wakeup() and reading device status. 
+ *  Sleep() and Wakeup() requires firmware 2.0.  Reading status requires firmware 2.2
+ *  
+ *  Starting version 1.4 of the SPS30 driver a firmware level check has been implemented
+ *  and in case a function is called that requires a higher level than
+ *  on the current SPS30, it will return an error.
+ *  By setting INCLUDE_FWCHECK to 0 in SPS30.h, this check can be disabled
+ *  
  *  =========================  Hardware connections =================================
  *  /////////////////////////////////////////////////////////////////////////////////
  *  ## UART UART UART UART UART UART UART UART UART UART UART UART UART UART UART  ##
@@ -51,8 +65,7 @@
  *  is only working on 115K the connection failed all the time with CRC errors.
  *
  *  Not tested ESP8266
- *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial,
- *  I have not tested this.
+ *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial
  *
  *  //////////////////////////////////////////////////////////////////////////////////
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
@@ -116,31 +129,9 @@
  *
  *  The pull-up resistors should be to 3V3 from the ESP8266.
  *
- *   ====  Optional temperature sensor (DS18x20 family) ====
- *
- *             DS18x20           ESP32 thing
- *   ------      GND   ------------- GND
- * |-| 4k7 |--   VCC /red ---------  3V3
- * | ------
- * |-----------  data/yellow ------- 4
- *
- *  You MUST connect a resistor of 4K7 between data and VCC for pull-up.
- *
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *  WARNING!! WARNING !!WARNING!! WARNING !!WARNING!! WARNING !! WARNING!! WARNING !!
- *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *  The DS18B20 works with VCC between 3 and 5V. It works fine on 3.3V however if connected to 5V
- *  and you have an ESP32, you MUST include a level shifter or making a bridge with resistors like below
- *
- *            -------            -------
- *  GND ------| 10K  |-----!---- | 5k6 |------  data/yellow from DS18x20
- *            --------     !     -------
- *                         !
- *                         pin 4 (ESP32)
- *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 175 there are configuration parameters for the program
+ *  From line 160 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -149,11 +140,6 @@
  *      - To select the Sparkfun ESP32 thing board before compiling
  *      - The serial monitor is NOT active (will cause upload errors)
  *      - Press GPIO 0 switch during connecting after compile to start upload to the board
- *
- *  DS18X20:
- *
- *  For Temperature sensor obtain  https://github.com/PaulStoffregen/OneWire
- *  Code for the DS18x20 is based on the DS18x20 example in the onewire library
  *
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -169,7 +155,6 @@
  */
 
 #include "sps30.h"
-#include <OneWire.h>
 
 /////////////////////////////////////////////////////////////
 /*define communication channel to use for SPS30
@@ -184,7 +169,7 @@
  * NOTE: Softserial has been left in as an option, but as the SPS30 is only
  * working on 115K the connection will probably NOT work on any device. */
 /////////////////////////////////////////////////////////////
-#define SP30_COMMS SERIALPORT1
+#define SP30_COMMS I2C_COMMS
 
 /////////////////////////////////////////////////////////////
 /* define RX and TX pin for softserial and Serial1 on ESP32
@@ -201,19 +186,6 @@
  //////////////////////////////////////////////////////////////
 #define DEBUG 0
 
-//////////////////////////////////////////////////////////////
-//            DS18x20  configuration                        //
-//////////////////////////////////////////////////////////////
-
-/* To which pin is the data wire of the DS18x20 connected
- * 0 means NO temperature sensor */
-#define TEMP_PIN 4          // see remark in hardware section in begin sketch
-
-/* Define reading in Fahrenheit or Celsius
- *  1 = Celsius
- *  0 = Fahrenheit */
-#define TEMP_TYPE 1
-
 ///////////////////////////////////////////////////////////////
 /////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
@@ -224,22 +196,15 @@ void ErrtoMess(char *mess, uint8_t r);
 void Errorloop(char *mess, uint8_t r);
 void GetDeviceInfo();
 bool read_all();
-float read_Temperature();
-void init_tmp(void) ;
 
-// create constructors
+// create constructor
 SPS30 sps30;
-OneWire ds(TEMP_PIN);
-
-// store temperature DS18x20 type and address
-byte type_s;
-byte addr[8];
 
 void setup() {
 
   Serial.begin(115200);
 
-  serialTrigger((char *) "SPS30-Example4: Basic reading + DS18x20. press <enter> to start");
+  serialTrigger((char *) "SPS30-Example11: Basic reading, sleep, wakeup and status. press <enter> to start");
 
   Serial.println(F("Trying to connect"));
 
@@ -256,21 +221,18 @@ void setup() {
 
   // check for SPS30 connection
   if (sps30.probe() == false) {
-    Errorloop((char *) "could not probe / connect with SPS30", 0);
+    Errorloop((char *) "could not probe / connect with SPS30.", 0);
   }
   else
-    Serial.println(F("Detected SPS30"));
+    Serial.println(F("Detected SPS30."));
 
   // reset SPS30 connection
   if (sps30.reset() == false) {
-    Errorloop((char *) "could not reset", 0);
+    Errorloop((char *) "could not reset.", 0);
   }
 
   // read device info
   GetDeviceInfo();
-
-  // check for DS18x20 connection
-  init_tmp();
 
   // start measurement
   if (sps30.start() == true)
@@ -287,108 +249,52 @@ void setup() {
 }
 
 void loop() {
-  read_all();
-  delay(3000);
-}
+  
+  uint8_t ret, st;
 
-////////////////////////////////////////////////////////////
-//           temperature sensor routines                  //
-////////////////////////////////////////////////////////////
+  ret = sps30.GetStatusReg(&st);
+  
+  if (ret == ERR_OK){
 
-/**
- * @brief initialize the temperature sensor */
-void init_tmp(void) {
+    if (st != STATUS_OK) {
+      
+      if (st & STATUS_SPEED_ERROR) {
+        Serial.println(F("WARNING : Fan is turning too fast or too slow"));
+      }
+      
+      if (st & STATUS_LASER_ERROR) {
+        Serial.println(F("ERROR: Laser failure"));
+      }  
 
-  type_s = 0xf;            // indicate no sensor
-
-  if (TEMP_PIN == 0) return;
-
-  Serial.print(F("Try to detect temperature sensor. "));
-
-  if ( !ds.search(addr)) {
-    Serial.println(F("No temperature sensor detected."));
-    return;
-  }
-
-  if (OneWire::crc8(addr, 7) != addr[7]) {
-    Serial.println(F(" CRC is not valid!"));
-    return;
-  }
-
-  // the first ROM byte indicates which chip
-  switch (addr[0]) {
-    case 0x10:
-      Serial.println(F("  Chip = DS18S20"));  // or old DS1820
-      type_s = 1;
-      break;
-    case 0x28:
-      Serial.println(F("  Chip = DS18B20"));
-      type_s = 0;
-      break;
-    case 0x22:
-      Serial.println(F("  Chip = DS1822"));
-      type_s = 0;
-      break;
-    default:
-      Serial.println(F("Device is not a DS18x20 family device."));
-      return;
-  }
-}
-
-/**
- * @brief : if DS18x20 sensor detected try to read it
- */
-float read_Temperature()
-{
-  byte i;
-  byte present = 0;
-  byte data[12];
-  float celsius, fahrenheit;
-
-  if (type_s == 0xf) return(0);
-
-  ds.reset();
-  ds.select(addr);
-  ds.write(0x44, 1);          // start conversion, with parasite power on at the end
-
-  delay(1000);                // maybe 750ms is enough, maybe not
-
-  present = ds.reset();
-  ds.select(addr);
-  ds.write(0xBE);             // Read Scratchpad
-
-  for ( i = 0; i < 9; i++) {  // we need 9 bytes
-    data[i] = ds.read();
-  }
-
-  // Convert the data to actual temperature because the result is a 16 bit signed integer, it should
-  // be stored to an "int16_t" type, which is always 16 bits even when compiled on a 32 bit processor.
-  int16_t raw = (data[1] << 8) | data[0];
-  if (type_s) {
-    raw = raw << 3;            // 9 bit resolution default
-    if (data[7] == 0x10) {
-      // "count remain" gives full 12 bit resolution
-      raw = (raw & 0xFFF0) + 12 - data[6];
+      if (st & STATUS_FAN_ERROR) {
+        Serial.println(F("ERROR: Fan failure, fan is mechanically blocked or broken"));
+      }     
     }
-  } else {
-    byte cfg = (data[4] & 0x60);
-    // at lower res, the low bits are undefined, so let's zero them
-    if (cfg == 0x00) raw = raw & ~7;      // 9 bit resolution, 93.75 ms
-    else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
-    else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
-    //// default is 12 bit resolution, 750 ms conversion time
   }
-  celsius = (float)raw / 16.0;
-  fahrenheit = celsius * 1.8 + 32.0;
+  else
+    ErrtoMess((char *) "ERROR: Could not read status. ", ret);
 
-  if (TEMP_TYPE)  return(celsius);
-  else return(fahrenheit);
+  // read all ddata
+  read_all();
+
+  // put the SPS30 to sleep 
+  ret = sps30.sleep();
+
+  if (ret != ERR_OK) {
+    ErrtoMess((char *) "ERROR: Could not set SPS30 to sleep. ", ret);
+  }
+
+  // wait 30000mS = 30 sec
+  delay(30000);
+
+  // wakeup SPS30
+  ret = sps30.wakeup();
+
+  if (ret != ERR_OK) {
+    ErrtoMess((char *) "ERROR: Could not wakeup SPS30. ", ret);
+  }
 }
 
-
-////////////////////////////////////////////////////////////
-//           SPS30 sensor routines                        //
-////////////////////////////////////////////////////////////
 /**
  * @brief : read and display device info
  */
@@ -401,7 +307,7 @@ void GetDeviceInfo()
   //try to read serial number
   ret = sps30.GetSerialNumber(buf, 32);
   if (ret == ERR_OK) {
-    Serial.print(F("\tSerial number : "));
+    Serial.print(F("Serial number : "));
     if(strlen(buf) > 0)  Serial.println(buf);
     else Serial.println(F("not available"));
   }
@@ -411,14 +317,13 @@ void GetDeviceInfo()
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
   if (ret == ERR_OK)  {
-    Serial.print(F("\tProduct name  : "));
+    Serial.print(F("Product name  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
     else Serial.println(F("not available"));
   }
   else
     ErrtoMess((char *) "could not get product name.", ret);
-
 
   // try to get version info
   ret = sps30.GetVersion(&v);
@@ -482,21 +387,9 @@ bool read_all()
 
   // only print header first time
   if (header) {
-    Serial.print(F("-------------Mass -----------    ------------- Number --------------   -Average-"));
-
-    if(type_s != 0xf) Serial.println(F(" -Temperature-"));
-    else Serial.println();
-
-    Serial.print(F("     Concentration [μg/m3]             Concentration [#/cm3]             [μm]"));
-
-    if(type_s != 0xf) {
-      if (TEMP_TYPE) Serial.println(F("\t\t[*C]"));
-      else Serial.println(F("\t\t[*F]"));
-    }
-    else Serial.println();
-
-    Serial.println(F("P1.0\tP2.5\tP4.0\tP10\tP0.5\tP1.0\tP2.5\tP4.0\tP10\tPrtSize\n"));
-
+    Serial.println(F("-------------Mass -----------    ------------- Number --------------   -Average-"));
+    Serial.println(F("     Concentration [μg/m3]             Concentration [#/cm3]             [μm]"));
+    Serial.println(F("P1.0\tP2.5\tP4.0\tP10\tP0.5\tP1.0\tP2.5\tP4.0\tP10\tPartSize\n"));
     header = false;
   }
 
@@ -519,12 +412,6 @@ bool read_all()
   Serial.print(val.NumPM10);
   Serial.print(F("\t"));
   Serial.print(val.PartSize);
-
-  if(type_s != 0xf){
-    Serial.print(F("\t\t"));
-    Serial.print(read_Temperature());
-  }
-
   Serial.print(F("\n"));
 
   return(true);

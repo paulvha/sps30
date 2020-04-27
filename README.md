@@ -99,8 +99,22 @@ Please see the description in the top of the sketch and read the documentation (
  * still fully backward compatible with earlier sketches
  * updated documentation
 
-### version 1.3.10a / April 2020
- * fixed compile debug print
+### version 1.4  / April 2020
+ * Based on the new SPS30 datasheet (March 2020) a number of functions
+ * are added or updated. Some are depending on the new firmware.
+ * Added sleep() and wakeup(). Requires firmware 2.0
+ * Added GetVersion() to obtain the current firmware / hardware / library info
+ * Added structure SPS30_version for GetVersion()
+ * Added GetStatusReg() to obtain SPS30 status information. Requires firmware 2.2
+ * Added internal function to check on correct firmware level
+ * Added INCLUDE_FWCHECK in SPS30.h to enable /disable check.
+ * Changed probe() to obtain firmware levels instead of serial number.
+ * Changed on how to obtaining product-type
+ * Depreciated GetArticleCode(). Still supporting backward compatibility
+ * Update the example sketches to include version levels
+ * Added example11 for sleep(), wakeup() and GetStatusreg()
+ * Update to documentation
+ * Added the new datasheet in extras-folder
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
@@ -109,7 +123,7 @@ Please see the description in the top of the sketch and read the documentation (
 This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgements
-Make sure to read the datasheet from Sensirion. While draft it does provide good starting point.<br>
+Make sure to read the datasheet from Sensirion, March 2020 version.<br>
 In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
 
 ![Uno and SP30](extras/sensirion.png)
