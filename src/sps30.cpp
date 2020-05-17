@@ -78,6 +78,9 @@
  *  - Update to documentation
  *  - Added the new datasheet in extras-folder
  *
+ * version 1.4.1  / May 2020
+ * - fixed issue in setOpmode() when NO UART is available.
+ * - added setOpmode() to exclude in small footprint
  *********************************************************************
  */
 
@@ -340,8 +343,14 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
  *  else error
  */
 
+
 uint8_t SPS30::SetOpMode( uint8_t mode )
 {
+
+#if defined SMALLFOOTPRINT                  // add 1.4.1
+   return(ERR_UNKNOWNCMD);
+#endif // SMALLFOOTPRINT
+
     // check for minimum Firmware level
     if(! FWCheck(2,0)) return(ERR_FIRMWARE);
 
@@ -373,9 +382,11 @@ uint8_t SPS30::SetOpMode( uint8_t mode )
         if (_Sensor_Comms == I2C_COMMS){
             if (! Instruct(SER_WAKEUP))  return(ERR_PROTOCOL);
         }
+#if defined INCLUDE_UART                    // add 1.4.1
         else {  // on serial send 0xff
             _serial->write(0xff);
         }
+#endif // INCLUDE_UART
 
         // give some time for the SPS30 to act on toggle as WAKEUP must be sent in 100mS
         delay(10);
@@ -753,7 +764,6 @@ uint8_t SPS30::GetAutoCleanInt(uint32_t *val)
 
     return(ret);
 }
-
 
 /**
  * @brief : get error description

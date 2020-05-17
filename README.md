@@ -116,6 +116,10 @@ Please see the description in the top of the sketch and read the documentation (
  * Update to documentation
  * Added the new datasheet in extras-folder
 
+### version 1.4.1  / May 2020
+ * fixed issue in setOpmode() when NO UART is available
+ * added setOpmode() to exclude in small footprint
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 

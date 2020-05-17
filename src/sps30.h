@@ -77,6 +77,9 @@
  *  - Update to documentation
  *  - Added the new datasheet in extras-folder
  *
+ * version 1.4.1  / May 2020
+ * - fixed issue in setOpmode() when NO UART is available.
+ * - added setOpmode() to exclude in small footprint
  *********************************************************************
 */
 #ifndef SPS30_H
