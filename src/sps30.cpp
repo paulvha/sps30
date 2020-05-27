@@ -79,8 +79,13 @@
  *  - Added the new datasheet in extras-folder
  *
  * version 1.4.1  / May 2020
- * - fixed issue in setOpmode() when NO UART is available.
- * - added setOpmode() to exclude in small footprint
+ *  - fixed issue in setOpmode() when NO UART is available.
+ *  - added setOpmode() to exclude in small footprint
+ *
+ * version 1.4.2  / May 2020
+ *  - added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo)
+ *  - added option to select in sketch any serial or wire channel to use (many user requests)
+ *  - added example12 and example13 sketches to demonstrate any channel selection option
  *********************************************************************
  */
 
@@ -162,6 +167,63 @@ void SPS30::DebugPrintf(const char *pcFmt, ...)
 }
 
 /**
+ * @brief Manual assigment of the serial communication port  added 1.4.2
+ *
+ * @param serialPort: serial communication port to use
+ *
+ * User must have preform the serialPort.begin(115200) in the sketch.
+ */
+bool SPS30::begin(Stream &serialPort)
+{
+#if defined INCLUDE_UART
+    _Sensor_Comms = COMM_TYPE_SERIAL;
+    _serial  = &serialPort; // Grab which port the user wants us to use
+    return true;
+#else
+    DebugPrintf("UART communication not enabled\n");
+    return(false);
+#endif // INCLUDE_UART
+}
+
+/**
+ * @brief Manual assigment of the serial communication port  added 1.4.2
+ *
+ * @param serialPort: serial communication port to use
+ *
+ * User must have preform the serialPort.begin(115200) in the sketch.
+ */
+bool SPS30::begin(Stream *serialPort)
+{
+#if defined INCLUDE_UART
+    _Sensor_Comms = COMM_TYPE_SERIAL;
+    _serial  = serialPort; // Grab which port the user wants us to use
+    return true;
+#else
+    DebugPrintf("UART communication not enabled\n");
+    return(false);
+#endif // INCLUDE_UART
+}
+
+/**
+ * @brief Manual assigment I2C communication port added 1.4.2
+ *
+ * @param port : I2C communication channel to be used
+ *
+ * User must have preform the wirePort.begin() in the sketch.
+ */
+bool SPS30::begin(TwoWire *wirePort)
+{
+#if defined INCLUDE_I2C
+    _Sensor_Comms = I2C_COMMS;
+    _i2cPort = wirePort; // Grab which port the user wants us to use
+    return true;
+#else
+    DebugPrintf("I2C communication not enabled\n");
+    return(false);
+#endif // INCLUDE_I2C
+}
+
+/**
  * @brief Initialize the communication port
  *
  * @param port : communication channel to be used (see sps30.h)
@@ -174,10 +236,10 @@ bool SPS30::begin(serial_port port)
     {
 
 #if defined INCLUDE_I2C
-        I2C_init();
+    I2C_init();
 #else
-        DebugPrintf("I2C communication not enabled\n");
-        return(false);
+    DebugPrintf("I2C communication not enabled\n");
+    return(false);
 #endif // INCLUDE_I2C
 
     }
@@ -297,7 +359,7 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
     if(! FWCheck(2,2)) return(ERR_FIRMWARE);
 
 #if defined INCLUDE_I2C
-    if ( _Sensor_Comms == I2C_COMMS) {
+    if (_Sensor_Comms == I2C_COMMS) {
 
         I2C_fill_buffer(I2C_READ_STATUS_REGISTER);
 
@@ -478,7 +540,11 @@ bool SPS30::Instruct(uint8_t type)
 
         else if (type == SER_RESET){
             _started = false;
-            Wire.begin();       // some I2C channels need a reset
+#if defined INCLUDE_I2C
+            if (_Sensor_Comms == I2C_COMMS) {
+                _i2cPort->begin();       // some I2C channels need a reset
+            }
+#endif
             delay(2000);
         }
 
@@ -502,7 +568,7 @@ uint8_t SPS30::GetVersion(SPS30_version *v)
     memset(v, 0x0, sizeof(struct SPS30_version));
 
 #if defined INCLUDE_I2C
-    if ( _Sensor_Comms == I2C_COMMS) {
+    if (_Sensor_Comms == I2C_COMMS) {
 
         I2C_fill_buffer(I2C_READ_VERSION);
 
@@ -636,7 +702,7 @@ uint8_t SPS30::SetAutoCleanInt(uint32_t val)
             save_started = _started;
 
             // flush and release lines
-            Wire.~TwoWire();
+            _i2cPort->~TwoWire();
             delay(1000);
             I2C_init();
 
@@ -939,13 +1005,14 @@ bool SPS30::setSerialSpeed()
             Serial.begin(_Serial_baud);
             _serial = &Serial;
             break;
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+// added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo) // 1.4.2
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(SAMD21G18A)
         case SERIALPORT1:
             Serial1.begin(_Serial_baud);
             _serial = &Serial1;
             break;
-
+#endif
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
         case SERIALPORT2:
             Serial2.begin(_Serial_baud);
             _serial = &Serial2;
@@ -1355,11 +1422,12 @@ uint8_t SPS30::I2C_expect()
 }
 
 /**
- * @brief : Start I2C communication
+ * @brief : Start I2C communication from library
  */
 void SPS30::I2C_init()
 {
-    Wire.begin();
+    Wire.begin();       // changed 1.4.2.
+    _i2cPort = &Wire;
 }
 
 /**
@@ -1421,9 +1489,9 @@ uint8_t SPS30::I2C_SetPointer()
         DebugPrintf("\n");
     }
 
-    Wire.beginTransmission(SPS30_ADDRESS);
-    Wire.write(_Send_BUF, _Send_BUF_Length);
-    Wire.endTransmission();
+    _i2cPort->beginTransmission(SPS30_ADDRESS);
+    _i2cPort->write(_Send_BUF, _Send_BUF_Length);
+    _i2cPort->endTransmission();
 
     return(ERR_OK);
 }
@@ -1482,11 +1550,11 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
     j = i = _Receive_BUF_Length = 0;
 
     // 2 data bytes  + crc
-    Wire.requestFrom((uint8_t) SPS30_ADDRESS, uint8_t (count / 2 * 3));
+    _i2cPort->requestFrom((uint8_t) SPS30_ADDRESS, uint8_t (count / 2 * 3));
 
-    while (Wire.available()) { // wait till all arrive
+    while (_i2cPort->available()) { // wait till all arrive
 
-        data[i++] = Wire.read();
+        data[i++] = _i2cPort->read();
 //DebugPrintf("data 0x%02X\n", data[i-1]);
         // 2 bytes RH, 1 CRC
         if( i == 3) {

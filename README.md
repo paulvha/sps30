@@ -4,13 +4,14 @@
 
 A program to set instructions and get information from an SPS30. It has been
 tested to run either UART or I2C communcation on ESP32, MEGA2560, ESP8266 and UNO.
+In the meantime other boards have been added to the test as well as extended
+interface options. (see below)
 <br> A detailed description of the options and findings are in SPS30.odt
 
 ## Getting Started
 As part of a larger project I am looking at analyzing and understanding the air quality.
-I have done a number of projects on air-sensors. The SPS30 sensor is a new kid on the block
-that looks interesting. This is the first version of a working driver + examples.
-More work is happening to create examples and compare against other sensors.
+I have done a number of projects on air-sensors. This is a version of a working driver + examples.
+More work continues to happen to create examples and compare against other sensors.
 
 A word of warning: the SPS30 needs a female plug of ZHR-5 from JST Sales America Inc.
 I have not been able to find a good source for that and was glad to buy the Sparkfun version
@@ -27,6 +28,20 @@ Obtain the zip and install like any other
 ## Program usage
 ### Program options
 Please see the description in the top of the sketch and read the documentation (odt)
+
+### Communication channel selection
+From the start I had decided to take an embedded communication channel setup. This made it
+much easier for the user to select and have the right setup for Serial or I2C. It was
+initially tested on an UNO, MEGA, ESP32, ESP8266 and works well.
+Overtime code has been adjusted to support more boards with different pin-outs based
+on user request and feedback.
+Given the large number of new boards that continue to hit the market, with different pin-outs,
+as well as boards with multiple I2C channels, I have decided to add the option
+for the user provide the communication channel also differently. This means the
+user will perform in the sketch the initialization of the channel (serial or I2C) and
+provide that to the SP30 library. Example12 (for serial communication) and Example13
+(for I2C communication) has been added to demonstrate the usage.
+The embedded approach, and thus backward compatibility, continue to be available.
 
 ## Versioning
 
@@ -100,8 +115,7 @@ Please see the description in the top of the sketch and read the documentation (
  * updated documentation
 
 ### version 1.4  / April 2020
- * Based on the new SPS30 datasheet (March 2020) a number of functions
- * are added or updated. Some are depending on the new firmware.
+ * Based on the new SPS30 datasheet (March 2020) a number of functions are added or updated. Some are depending on the new firmware.
  * Added sleep() and wakeup(). Requires firmware 2.0
  * Added GetVersion() to obtain the current firmware / hardware / library info
  * Added structure SPS30_version for GetVersion()
@@ -117,8 +131,13 @@ Please see the description in the top of the sketch and read the documentation (
  * Added the new datasheet in extras-folder
 
 ### version 1.4.1  / May 2020
- * fixed issue in setOpmode() when NO UART is available
- * added setOpmode() to exclude in small footprint
+ * Fixed issue in setOpmode() when NO UART is available, only I2C.
+ * Added setOpmode() to exclude in small footprint
+
+### version 1.4.2  / May 2020
+ * added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo)
+ * added option to select in sketch any serial or wire channel to use (many user requests)
+ * added example12 and example13 sketches to demonstrate any channel selection option
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

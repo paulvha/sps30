@@ -78,8 +78,13 @@
  *  - Added the new datasheet in extras-folder
  *
  * version 1.4.1  / May 2020
- * - fixed issue in setOpmode() when NO UART is available.
- * - added setOpmode() to exclude in small footprint
+ *  - fixed issue in setOpmode() when NO UART is available.
+ *  - added setOpmode() to exclude in small footprint
+ *
+ * version 1.4.2  / May 2020
+ *  - added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo)
+ *  - added option to select in sketch any serial or wire channel to use (many user requests)
+ *  - added example12 and example13 sketches to demonstrate any channel selection option
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -257,6 +262,7 @@ enum serial_port {
     SERIALPORT1 = 3,
     SERIALPORT2 = 4,
     SERIALPORT3 = 5,
+    COMM_TYPE_SERIAL = 6,      // added 1.4.2
     NONE = 6
 };
 
@@ -444,6 +450,25 @@ class SPS30
     bool begin(serial_port port = SERIALPORT2); // If user doesn't specify Serial2 will be used
 
     /**
+     * @brief Manual assigment of the serial communication port  added 1.4.2
+     *
+     * @param serialPort: serial communication port to use
+     *
+     * User must have preform the serialPort.begin(115200) in the sketch.
+     */
+    bool begin(Stream *serialPort);
+    bool begin(Stream &serialPort);
+
+    /**
+     * @brief Manual assigment I2C communication port added 1.4.2
+     *
+     * @param port : I2C communication channel to be used
+     *
+     * User must have preform the wirePort.begin() in the sketch.
+     */
+    bool begin(TwoWire *wirePort);
+
+    /**
      * @brief : Perform SPS-30 instructions
      */
     bool probe();
@@ -592,6 +617,7 @@ class SPS30
 
 #if defined INCLUDE_I2C
     /** I2C communication */
+    TwoWire *_i2cPort;      // holds the I2C port
     void I2C_init();
     void I2C_fill_buffer(uint16_t cmd, uint32_t interval = 0);
     uint8_t I2C_ReadToBuffer(uint8_t count, bool chk_zero);
