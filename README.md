@@ -139,6 +139,9 @@ The embedded approach, and thus backward compatibility, continue to be available
  * added option to select in sketch any serial or wire channel to use (many user requests)
  * added example12 and example13 sketches to demonstrate any channel selection option
 
+### version 1.4.3 / Jun 2020
+ * update to I2C_WAKEUP code in SPS30.h
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 

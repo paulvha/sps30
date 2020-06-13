@@ -85,6 +85,9 @@
  *  - added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo)
  *  - added option to select in sketch any serial or wire channel to use (many user requests)
  *  - added example12 and example13 sketches to demonstrate any channel selection option
+ *
+ * version 1.4.3 / Jun 2020
+ *  - update to I2C_WAKEUP code
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -407,7 +410,7 @@ enum SPS_status {
 #define I2C_READ_DATA_RDY_FLAG      0x0202
 #define I2C_READ_MEASURED_VALUE     0x0300
 #define I2C_SLEEP                   0X1001  // ADDED 1.4
-#define I2C_WAKEUP                  0X1002  // ADDED 1.4
+#define I2C_WAKEUP                  0X1103  // ADDED 1.4 / update 1.4.3
 #define I2C_START_FAN_CLEANING      0x5607
 #define I2C_AUTO_CLEANING_INTERVAL  0x8004
 #define I2C_SET_AUTO_CLEANING_INTERVAL      0x8005
