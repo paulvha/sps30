@@ -86,6 +86,16 @@
  *  - added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo)
  *  - added option to select in sketch any serial or wire channel to use (many user requests)
  *  - added example12 and example13 sketches to demonstrate any channel selection option
+ *
+ * version 1.4.3 / June 2020
+ *  - update to I2C_WAKEUP code
+ *
+ * version 1.4.4 / July 2020
+ *  - added embedded support for Arduino Due
+ *  - As I now have a SPS30 firmware level 2.2 to test, corrected GetStatusReg() and SetOpMode()
+ *  - changed Example11 to demonstrate reading status register only
+ *  - added Example14 to demonstrate sleep and wakeup function.
+ *
  *********************************************************************
  */
 
@@ -346,10 +356,9 @@ bool SPS30::FWCheck(uint8_t major, uint8_t minor) {
  *
  * Return obtain result
  * return
- *  ERR_OK = ok
- *  else error
+ *  ERR_OK = ok, no isues found
+ *  else ERR_OUTOFRANGE, issues found
  */
-
 uint8_t SPS30::GetStatusReg(uint8_t *status) {
     uint8_t ret, offset;
 
@@ -362,19 +371,20 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
     if (_Sensor_Comms == I2C_COMMS) {
 
         I2C_fill_buffer(I2C_READ_STATUS_REGISTER);
-
-        ret = I2C_SetPointer_Read(5,false);
-
+        ret = I2C_SetPointer_Read(4,false);
         offset = 0;
+
+        // clear status register just in case there was an issue
+        I2C_fill_buffer(I2C_CLEAR_STATUS_REGISTER);
+        I2C_SetPointer();
     }
     else
 #endif // INCLUDE_I2C
 
 #if defined INCLUDE_UART
     {
-        // fill buffer to send
+        // fill buffer to read_status register and clear after reading
         if ( ! SHDLC_fill_buffer(SER_READ_STATUS) ) return(ERR_PARAMETER);
-
         ret = ReadFromSerial();
         offset = 5;
     }
@@ -382,11 +392,21 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
     {}
 #endif // INCLUDE_UART
 
+    /* Version 1.4.4
+     * From the datasheet : If one of the device status flags of type “Error” is set,
+     * this is also indicated in every SHDLC response frame by the Error-Flag in the state byte.
+     *
+     * often ret = 0x80 is returned when there is an error, BUT NOT always !
+     * So the return value of reading is ignored
+     */
+
     if (_Receive_BUF[offset + 1] & 0b00100000) *status |= STATUS_SPEED_ERROR;
     if (_Receive_BUF[offset + 3] & 0b00100000) *status |= STATUS_LASER_ERROR;
     if (_Receive_BUF[offset + 3] & 0b00010000) *status |= STATUS_FAN_ERROR;
 
-    return(ret);
+    if (*status != 0x0) return(ERR_OUTOFRANGE);
+
+    return(ERR_OK);
 }
 
 /**
@@ -404,14 +424,11 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
  *  ERR_OK = ok
  *  else error
  */
-
-
 uint8_t SPS30::SetOpMode( uint8_t mode )
 {
-
 #if defined SMALLFOOTPRINT                  // add 1.4.1
    return(ERR_UNKNOWNCMD);
-#endif // SMALLFOOTPRINT
+#else
 
     // check for minimum Firmware level
     if(! FWCheck(2,0)) return(ERR_FIRMWARE);
@@ -455,10 +472,13 @@ uint8_t SPS30::SetOpMode( uint8_t mode )
 
         if (! Instruct(SER_WAKEUP))  return(ERR_PROTOCOL);
 
+        // give time for SPS30 to go idle
+        delay(100);
+
         // indicate not in sleep anymore
         _sleep = false;
 
-        // was started before instructed to go to sleep
+        // was SPS30 started before instructed to go to sleep
         if (_WasStarted) {
             if(! start()) return(ERR_PROTOCOL);
         }
@@ -467,6 +487,7 @@ uint8_t SPS30::SetOpMode( uint8_t mode )
         return(ERR_PARAMETER);
 
     return(ERR_OK);
+#endif // SMALLFOOTPRINT
 }
 
 /**
@@ -1006,13 +1027,15 @@ bool SPS30::setSerialSpeed()
             _serial = &Serial;
             break;
 // added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo) // 1.4.2
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(SAMD21G18A)
+// added Arduino due version 1.4.4
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(SAMD21G18A) || defined(ARDUINO_SAM_DUE)
         case SERIALPORT1:
             Serial1.begin(_Serial_baud);
             _serial = &Serial1;
             break;
 #endif
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+// added Arduino due  version 1.4.4
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(ARDUINO_SAM_DUE)
         case SERIALPORT2:
             Serial2.begin(_Serial_baud);
             _serial = &Serial2;
@@ -1168,7 +1191,7 @@ bool SPS30::SHDLC_fill_buffer(uint8_t command, uint32_t parameter)
 
         case SER_READ_STATUS:
             _Send_BUF[i++] = 1;     // length
-            _Send_BUF[i++] = 0;     // do NOT clear bits after reading
+            _Send_BUF[i++] = 1;     // Clear bits after reading (as the condition might have been cleared) //1.4.4
             break;
 
         case SER_STOP_MEASUREMENT:

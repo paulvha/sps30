@@ -3,8 +3,8 @@
 ## ===========================================================
 
 A program to set instructions and get information from an SPS30. It has been
-tested to run either UART or I2C communcation on ESP32, MEGA2560, ESP8266 and UNO.
-In the meantime other boards have been added to the test as well as extended
+tested to run either UART or I2C communcation on ESP32, MEGA2560, ESP8266, UNO and Due.
+In the meantime many other boards have been added to the test as well as extended
 interface options. (see below)
 <br> A detailed description of the options and findings are in SPS30.odt
 
@@ -20,7 +20,7 @@ I have not been able to find a good source for that and was glad to buy the Spar
 <br> May 2019 : there is also a library available for Raspberry Pi (https://github.com/paulvha/sps30_on_raspberry)
 
 ## Prerequisites
-Examples 4, 5, 7,8 and 10 have a dependency on other libraries. Documented in sketch
+Examples 4, 5, 7,8 and 10 have a dependency on other libraries. Documented in sketch.
 
 ## Software installation
 Obtain the zip and install like any other
@@ -32,7 +32,7 @@ Please see the description in the top of the sketch and read the documentation (
 ### Communication channel selection
 From the start I had decided to take an embedded communication channel setup. This made it
 much easier for the user to select and have the right setup for Serial or I2C. It was
-initially tested on an UNO, MEGA, ESP32, ESP8266 and works well.
+initially tested on an UNO, MEGA, ESP32, ESP8266, Due (1.4.4) and works well.
 Overtime code has been adjusted to support more boards with different pin-outs based
 on user request and feedback.
 Given the large number of new boards that continue to hit the market, with different pin-outs,
@@ -139,8 +139,14 @@ The embedded approach, and thus backward compatibility, continue to be available
  * added option to select in sketch any serial or wire channel to use (many user requests)
  * added example12 and example13 sketches to demonstrate any channel selection option
 
-### version 1.4.3 / Jun 2020
- * update to I2C_WAKEUP code in SPS30.h
+### version 1.4.3 / June 2020
+ * update to I2C_WAKEUP code
+
+### version 1.4.4 / July 2020
+ * added embedded support for Arduino Due
+ * as I now have a SPS30 firmware level 2.2 to test, corrected GetStatusReg() and SetOpMode()
+ * changed Example11 to demonstrate reading status register only
+ * added Example14 to demonstrate sleep and wakeup function.
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
@@ -151,6 +157,6 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 ## Acknowledgements
 Make sure to read the datasheet from Sensirion, March 2020 version.<br>
 In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
-
+<br>Take you Sensirion for providing an SPS30 with the firmware 2.2. The Library has no been tested against that version
 ![Uno and SP30](extras/sensirion.png)
 

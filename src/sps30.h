@@ -86,8 +86,15 @@
  *  - added option to select in sketch any serial or wire channel to use (many user requests)
  *  - added example12 and example13 sketches to demonstrate any channel selection option
  *
- * version 1.4.3 / Jun 2020
+ * version 1.4.3 / June 2020
  *  - update to I2C_WAKEUP code
+ *
+ * version 1.4.4 / July 2020
+ *  - added embedded support for Arduino Due
+ *  - As I now have a SPS30 firmware level 2.2 to test, corrected GetStatusReg() and SetOpMode()
+ *  - changed Example11 to demonstrate reading status register only
+ *  - added Example14 to demonstrate sleep and wakeup function.
+ *
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -234,12 +241,13 @@ enum debug_serial {
 
       /* version 1.3.2 added support for SAMD SERCOM detection */
       /* version 1.3.9 autodetection for SAMD SERCOM and ESP32 to undef softwareSerial */
+      /* version 1.4.4 autodetection for Arduino DUE to undef softwareSerial */
 
-      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32
+      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32 || defined ARDUINO_SAM_DUE
         #undef  INCLUDE_SOFTWARE_SERIAL
       #else
          #include <SoftwareSerial.h>        // softserial
-      #endif // not defined ARDUINO_ARCH_SAMD & ESP32
+      #endif // not defined ARDUINO_ARCH_SAMD & ESP32 & DUE
     #endif // INCLUDE_SOFTWARE_SERIAL
 
 #endif // INCLUDE_UART
@@ -250,8 +258,8 @@ enum debug_serial {
  *   SOFTWARE_SERIAL        Arduino variants and ESP8266 (On ESP32 software Serial is NOT very stable)
  *   SERIALPORT             ONLY IF there is NO monitor attached
  *   SERIALPORT1            Arduino MEGA2560, 32U4, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
- *   SERIALPORT2            Arduino MEGA2560 and ESP32
- *   SERIALPORT3            Arduino MEGA2560 only for now
+ *   SERIALPORT2            Arduino MEGA2560, Due and ESP32
+ *   SERIALPORT3            Arduino MEGA2560 and Due only for now
  *   NONE                   No port defined
  *
  * Softserial has been left in as an option, but as the SPS30 is only
@@ -373,8 +381,8 @@ enum SPS_status {
  *
  * This driver only uses float
  */
-#define START_MEASURE_FLOAT           0X03
-#define START_MEASURE_UNS16           0X05
+#define START_MEASURE_FLOAT         0X03
+#define START_MEASURE_UNS16         0X05
 
 /*************************************************************/
 /* SERIAL COMMUNICATION INFORMATION */
@@ -419,7 +427,7 @@ enum SPS_status {
 #define I2C_READ_SERIAL_NUMBER      0xD033
 #define I2C_READ_VERSION            0xD100 // ADDED 1.4
 #define I2C_READ_STATUS_REGISTER    0xD206 // ADDED 1.4
-#define I2C_CLEAR_STATUS_REGISTER   0xD206 // ADDED 1.4 (NOT USED)
+#define I2C_CLEAR_STATUS_REGISTER   0xD210 // ADDED 1.4 / update 1.4.4
 #define I2C_RESET                   0xD304
 
 #define SPS30_ADDRESS 0x69                 // I2c address
@@ -457,7 +465,7 @@ class SPS30
      *
      * @param serialPort: serial communication port to use
      *
-     * User must have preform the serialPort.begin(115200) in the sketch.
+     * User must have preformed the serialPort.begin(115200) in the sketch.
      */
     bool begin(Stream *serialPort);
     bool begin(Stream &serialPort);
@@ -467,7 +475,7 @@ class SPS30
      *
      * @param port : I2C communication channel to be used
      *
-     * User must have preform the wirePort.begin() in the sketch.
+     * User must have preformed the wirePort.begin() in the sketch.
      */
     bool begin(TwoWire *wirePort);
 
@@ -528,6 +536,16 @@ class SPS30
      * The commands are accepted and positive acknowledged on lower level
      * firmware, but do not execute.
      *
+     * @param  *status
+     *  return status as an 'or':
+     *   STATUS_OK = 0,
+     *   STATUS_SPEED_ERROR = 1,
+     *   STATUS_SPEED_CURRENT_ERROR = 2,
+     *   STATUS_FAN_ERROR = 4
+     *
+     * @return
+     *  ERR_OK = ok, no isues found
+     *  else ERR_OUTOFRANGE, issues found
      */
     uint8_t GetStatusReg(uint8_t *status);
 
