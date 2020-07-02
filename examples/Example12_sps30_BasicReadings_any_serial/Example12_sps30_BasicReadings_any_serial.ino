@@ -33,11 +33,11 @@
  *  3 TX  -------- RX  pin 25 !! NEEDS A CHANGE ON LINE 130
  *  4 Select      (NOT CONNECTED)
  *  5 GND -------- GND
- * 
+ *
  *  Also successfully tested on Serial2 (default pins TX:17, RX: 16)
  *  NO level shifter is needed as the SPS30 is TTL 5V and LVTTL 3.3V compatible
  *  ..........................................................
- *  Successfully tested on ATMEGA2560
+ *  Successfully tested on ATMEGA2560, Due
  *  Used Serial2. No need to set/change RX or TX pin
  *  SPS30 pin     ATMEGA
  *  1 VCC -------- 5V
@@ -99,7 +99,7 @@
 ///// NORMALLY NO CHANGES BEYOND THIS POINT NEEDED  ///////////
 // BUT IF YOU NEED TO SET DIFFERENT PINS FOR SERIAL PORT     //
 // AS IS THE CASE FOR ESP32 SERIAL1
-// CHANGE LINE 130:  SP30_COMMS.begin(115200);               // 
+// CHANGE LINE 130:  SP30_COMMS.begin(115200);               //
 ///////////////////////////////////////////////////////////////
 
 // function prototypes (sometimes the pre-processor does not create prototypes themself on ESPxx)
@@ -130,30 +130,22 @@ void setup() {
   SP30_COMMS.begin(115200);
 
   // Initialize SPS30 library
-  if (sps30.begin(&SP30_COMMS) == false) {
+  if (! sps30.begin(&SP30_COMMS))
     Errorloop((char *) "Could not set serial communication channel.", 0);
-  }
 
   // check for SPS30 connection
-  if (sps30.probe() == false) {
-    Errorloop((char *) "Could not probe / connect with SPS30.", 0);
-  }
-  else
-    Serial.println(F("Detected SPS30."));
+  if (! sps30.probe()) Errorloop((char *) "could not probe / connect with SPS30.", 0);
+  else  Serial.println(F("Detected SPS30."));
 
   // reset SPS30 connection
-  if (sps30.reset() == false) {
-    Errorloop((char *) "Could not reset.", 0);
-  }
+  if (! sps30.reset()) Errorloop((char *) "could not reset.", 0);
 
   // read device info
   GetDeviceInfo();
 
   // start measurement
-  if (sps30.start() == true)
-    Serial.println(F("Measurement started."));
-  else
-    Errorloop((char *) "Could NOT start measurement.", 0);
+  if (sps30.start()) Serial.println(F("Measurement started"));
+  else Errorloop((char *) "Could NOT start measurement", 0);
 
   serialTrigger((char *) "Hit <enter> to continue reading.");
 }
@@ -200,23 +192,16 @@ void GetDeviceInfo()
     return;
   }
 
-  Serial.print(F("Firmware level: "));
-  Serial.print(v.major);
-  Serial.print(".");
-  Serial.println(v.minor);
+  Serial.print(F("Firmware level: "));  Serial.print(v.major);
+  Serial.print(".");  Serial.println(v.minor);
 
-  Serial.print(F("Hardware level: "));
-  Serial.println(v.HW_version);
+  Serial.print(F("Hardware level: "));  Serial.println(v.HW_version);
 
-  Serial.print(F("SHDLC protocol: "));
-  Serial.print(v.SHDLC_major);
-  Serial.print(".");
-  Serial.println(v.SHDLC_minor);
+  Serial.print(F("SHDLC protocol: ")); Serial.print(v.SHDLC_major);
+  Serial.print(".");  Serial.println(v.SHDLC_minor);
 
-  Serial.print(F("Library level : "));
-  Serial.print(v.DRV_major);
-  Serial.print(".");
-  Serial.println(v.DRV_minor);
+  Serial.print(F("Library level : "));  Serial.print(v.DRV_major);
+  Serial.print(".");  Serial.println(v.DRV_minor);
 }
 
 /**

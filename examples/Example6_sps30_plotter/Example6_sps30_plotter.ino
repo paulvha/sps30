@@ -7,6 +7,9 @@
  *  Version 1.1.1 Paul van Haastrecht / March 2020
  *  - Fixed compile errors and warnings.
  *
+ *  Version 1.1.3 Paul van Haastrecht / July 2020
+ *  - added embedded support for Arduino Due
+ *
  *  =========================  Highlevel description ================================
  *
  *  This basic reading example sketch will connect to an SPS30 for getting data and
@@ -34,7 +37,7 @@
  *  Also successfully tested on Serial2 (default pins TX:17, RX: 16)
  *  NO level shifter is needed as the SPS30 is TTL 5V and LVTTL 3.3V compatible
  *  ..........................................................
- *  Successfully tested on ATMEGA2560
+ *  Successfully tested on ATMEGA2560, Due
  *  Used SerialPort2. No need to set/change RX or TX pin
  *  SPS30 pin     ATMEGA
  *  1 VCC -------- 5V
@@ -80,7 +83,7 @@
  *
  *  The pull-up resistors should be to 3V3
  *  ..........................................................
- *  Successfully tested on ATMEGA2560
+ *  Successfully tested on ATMEGA2560, Due
  *
  *  SPS30 pin     ATMEGA
  *  1 VCC -------- 5V
@@ -117,7 +120,7 @@
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 142 there are configuration parameters for the program
+ *  From line 149 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -149,9 +152,9 @@
  *   I2C_COMMS              use I2C communication
  *   SOFTWARE_SERIAL        Arduino variants (NOTE)
  *   SERIALPORT             ONLY IF there is NO monitor attached
- *   SERIALPORT1            Arduino MEGA2560, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
- *   SERIALPORT2            Arduino MEGA2560 and ESP32
- *   SERIALPORT3            Arduino MEGA2560 only for now
+ *   SERIALPORT1            Arduino MEGA2560, Due. Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
+ *   SERIALPORT2            Arduino MEGA2560, Due and ESP32
+ *   SERIALPORT3            Arduino MEGA2560, Due only for now
 
  * NOTE: Softserial has been left in as an option, but as the SPS30 is only
  * working on 115K the connection will probably NOT work on any device. */
@@ -217,27 +220,19 @@ void setup() {
   if (TX_PIN != 0 && RX_PIN != 0) sps30.SetSerialPin(RX_PIN,TX_PIN);
 
   // Begin communication channel;
-  if (sps30.begin(SP30_COMMS) == false) {
+  if (! sps30.begin(SP30_COMMS))
     Errorloop((char *) "could not initialize communication channel.", 0);
-  }
 
   // check for SPS30 connection
-  if (sps30.probe() == false) {
-    Errorloop((char *) "could not probe / connect with SPS30", 0);
-  }
-  else
-    Serial.println(F("Detected SPS30"));
+  if (! sps30.probe()) Errorloop((char *) "could not probe / connect with SPS30.", 0);
+  else  Serial.println(F("Detected SPS30."));
 
   // reset SPS30 connection
-  if (sps30.reset() == false) {
-    Errorloop((char *) "could not reset", 0);
-  }
+  if (! sps30.reset()) Errorloop((char *) "could not reset.", 0);
 
   // start measurement
-  if (sps30.start() == true)
-    Serial.println(F("Measurement started"));
-  else
-    Errorloop((char *) "Could NOT start measurement", 0);
+  if (sps30.start()) Serial.println(F("Measurement started"));
+  else Errorloop((char *) "Could NOT start measurement", 0);
 
   if (SP30_COMMS == I2C_COMMS) {
     if (sps30.I2C_expect() == 4)

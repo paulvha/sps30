@@ -10,6 +10,9 @@
  *  Version 1.1.2 Paul van Haastrecht / March 2020
  *  - added versions level to GetDeviceInfo()
  *
+ *  Version 1.1.3 Paul van Haastrecht / July 2020
+ *  - added embedded support for Arduino Due
+ *
  *  =========================  Highlevel description ================================
  *
  *  This basic reading example sketch will connect to an SPS30 and SCD30 for
@@ -35,7 +38,7 @@
  *  Also successfully tested on Serial2 (default pins TX:17, RX: 16)
  *  NO level shifter is needed as the SPS30 is TTL 5V and LVTTL 3.3V compatible
  *  ..........................................................
- *  Successfully tested on ATMEGA2560
+ *  Successfully tested on ATMEGA2560, Due
  *  Used SerialPort2. No need to set/change RX or TX pin
  *  SPS30 pin     ATMEGA
  *  1 VCC -------- 5V
@@ -81,7 +84,7 @@
  *
  *  The pull-up resistors should be to 3V3
  *  ..........................................................
- *  Successfully tested on ATMEGA2560
+ *  Successfully tested on ATMEGA2560, Due
  *
  *  SPS30 pin     ATMEGA
  *  1 VCC -------- 5V
@@ -136,11 +139,11 @@
  * For that you need to un-comment in sps30.h the line:  //#define SOFTI2C_ESP32 1
  *
  * In case you do not plan to use the I2C code for the SPS30 you could instead in sps30.h
- * comment out the line : #define INCLUDE_I2C   1. (also saves memory)
+ * comment out the line : #define INCLUDE_I2C 1. (also saves memory)
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 172 there are configuration parameters for the program
+ *  From line 175 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -174,9 +177,9 @@
  *   I2C_COMMS              use I2C communication
  *   SOFTWARE_SERIAL        Arduino variants (NOTE)
  *   SERIALPORT             ONLY IF there is NO monitor attached
- *   SERIALPORT1            Arduino MEGA2560, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
- *   SERIALPORT2            Arduino MEGA2560 and ESP32
- *   SERIALPORT3            Arduino MEGA2560 only for now
+ *   SERIALPORT1            Arduino MEGA2560,Due. Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
+ *   SERIALPORT2            Arduino MEGA2560, Due and ESP32
+ *   SERIALPORT3            Arduino MEGA2560, Due only for now
 
  * NOTE: Softserial has been left in as an option, but as the SPS30 is only
  * working on 115K the connection will probably NOT work on any device.
@@ -239,29 +242,24 @@ void setup() {
   if (TX_PIN != 0 && RX_PIN != 0) sps30.SetSerialPin(RX_PIN,TX_PIN);
 
   // Begin communication channel;
-  if (sps30.begin(SP30_COMMS) == false) {
+  if (! sps30.begin(SP30_COMMS))
     Errorloop((char *) "could not initialize communication channel.", 0);
-  }
 
   // check for SPS30 connection
-  if (sps30.probe() == false)
-    Errorloop((char *) "could not probe / connect with SPS30", 0);
-  else
-    Serial.println(F("Detected SPS30"));
+  if (! sps30.probe()) Errorloop((char *) "could not probe / connect with SPS30.", 0);
+  else  Serial.println(F("Detected SPS30."));
 
   // reset SPS30 connection
-  if (sps30.reset() == false) {
-    Errorloop((char *) "could not reset", 0);
-  }
+  if (! sps30.reset()) Errorloop((char *) "could not reset.", 0);
 
   // read device info
   GetDeviceInfo();
 
-  // set SCD30
+  // ============= set SCD30 =========================
   airSensor.setDebug(DEBUG);
 
   // This will init the wire, but NOT start reading
-  if (airSensor.begin(Wire,false) == false)
+  if (! airSensor.begin(Wire,false))
     Serial.println(F("cound not start SCD30"));
   else
   {
@@ -282,11 +280,9 @@ void setup() {
   else
     SCD30_detected = true;
 
-  // start measurement
-  if (sps30.start() == true)
-    Serial.println(F("Measurement started"));
-  else
-    Errorloop((char *) "Could NOT start measurement", 0);
+  // start SPS30 measurement
+  if (sps30.start()) Serial.println(F("Measurement started"));
+  else Errorloop((char *) "Could NOT start measurement", 0);
 
   serialTrigger((char *) "Hit <enter> to continue reading");
 
@@ -339,25 +335,18 @@ void GetDeviceInfo()
     return;
   }
 
-  Serial.print("Firmware level: ");
-  Serial.print(v.major);
-  Serial.print(".");
-  Serial.println(v.minor);
+  Serial.print(F("Firmware level: "));  Serial.print(v.major);
+  Serial.print("."); Serial.println(v.minor);
 
   if (SP30_COMMS != I2C_COMMS) {
-    Serial.print("Hardware level: ");
-    Serial.println(v.HW_version);
+    Serial.print(F("Hardware level: ")); Serial.println(v.HW_version);
 
-    Serial.print("SHDLC protocol: ");
-    Serial.print(v.SHDLC_major);
-    Serial.print(".");
-    Serial.println(v.SHDLC_minor);
+    Serial.print(F("SHDLC protocol: ")); Serial.print(v.SHDLC_major);
+    Serial.print("."); Serial.println(v.SHDLC_minor);
   }
 
-  Serial.print("Library level : ");
-  Serial.print(v.DRV_major);
-  Serial.print(".");
-  Serial.println(v.DRV_minor);
+  Serial.print(F("Library level : "));  Serial.print(v.DRV_major);
+  Serial.print(".");  Serial.println(v.DRV_minor);
 }
 
 /**

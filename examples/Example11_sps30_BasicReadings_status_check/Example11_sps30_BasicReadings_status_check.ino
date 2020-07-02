@@ -1,13 +1,34 @@
 /************************************************************************************
- *  Copyright (c) February 2019, version 1.0     Paul van Haastrecht
+ *  Copyright (c) July 2020, version 1.0     Paul van Haastrecht
  *
- *  Version 1.1.1 Paul van Haastrecht / March 2020
- *  - Fixed compile errors and warnings.
- *
+ *  Version 1.4.4 Paul van Haastrecht / July 2020
+ *  - added reading status register()
  *  =========================  Highlevel description ================================
  *
- *  This basic reading example sketch will connect to an SPS30, SCD30 and BME280
- *  for getting data and display the available data.
+ *  This basic reading example sketch will connect to an SPS30 for getting data and
+ *  display the available data, including checking the status register.
+ *
+ *  =================================================================================
+ *
+ *  New firmware levels have been slipped streamed into the SPS30
+ *  The datasheet from March 2020 shows added / updated functions on new
+ *  firmware level: sleep(), wakeup(), device status register are new
+ *
+ *  On serial connection the new functions are accepted and positive
+ *  acknowledged on lower level firmware, but execution does not seem
+ *  to happen or should be expected.
+ *
+ *  On I2C reading Status register gives an error on lower level firmware.
+ *  Sleep and wakeup are accepted and positive acknowledged on lower level
+ *  firmware, but execution does not seem to happen or should be expected.
+ *
+ *  This sketch demonstates the usage reading device status.
+ *  Reading status requires firmware 2.2
+ *
+ *  Starting version 1.4 of the SPS30 driver a firmware level check has been implemented
+ *  and in case a function is called that requires a higher level than
+ *  on the current SPS30, it will return an error.
+ *  By setting INCLUDE_FWCHECK to 0 in SPS30.h, this check can be disabled
  *
  *  =========================  Hardware connections =================================
  *  /////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +50,7 @@
  *  Also successfully tested on Serial2 (default pins TX:17, RX: 16)
  *  NO level shifter is needed as the SPS30 is TTL 5V and LVTTL 3.3V compatible
  *  ..........................................................
- *  Successfully tested on ATMEGA2560
+ *  Successfully tested on ATMEGA2560 / Arduino Due
  *  Used SerialPort2. No need to set/change RX or TX pin
  *  SPS30 pin     ATMEGA
  *  1 VCC -------- 5V
@@ -45,8 +66,7 @@
  *  is only working on 115K the connection failed all the time with CRC errors.
  *
  *  Not tested ESP8266
- *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial,
- *  I have not tested this.
+ *  As the power is only 3V3 (the SPS30 needs 5V)and one has to use softserial
  *
  *  //////////////////////////////////////////////////////////////////////////////////
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
@@ -75,7 +95,7 @@
  *
  *  The pull-up resistors should be to 3V3
  *  ..........................................................
- *  Successfully tested on ATMEGA2560
+ *  Successfully tested on ATMEGA2560 / Arduino Due
  *
  *  SPS30 pin     ATMEGA
  *  1 VCC -------- 5V
@@ -94,9 +114,10 @@
  *  4 Select ----- GND  (select I2c)
  *  5 GND -------- GND
  *
- *  When UNO-board is detected the UART code is excluded as that does not work on
- *  UNO and will save memory. Also some buffers reduced and the call to
- *  GetErrDescription() is removed to allow enough memory.
+ *  When UNO-board is detected the UART code is excluded as that
+ *  does not work on UNO and will save memory. Also some buffers
+ *  reduced and the call to GetErrDescription() is removed to allow
+ *  enough memory.
  *  ..........................................................
  *  Successfully tested on ESP8266
  *
@@ -109,48 +130,9 @@
  *
  *  The pull-up resistors should be to 3V3 from the ESP8266.
  *
- *  ===============  BME280 sensor =========================
- *  BME280
- *  VCC  ------ VCC  (3V3 or 5V depending on board)
- *  GND  ------ GND
- *  SCK  ------ SCL
- *  SDI  ------ SDA
- *
- *  ===============  SCD30 sensor =========================
- *
- *  SCD30
- *  1 VDD  --------- VCC ( 3V3 or 5V)
- *  2 GND  --------- GND
- *  3 TX/SCL ------- SCL
- *  4 RX/SDA ------- SDA
- *  5 RDY    ------- NOT CONNECTED
- *  6 PWM    ------- NOT CONNECTED
- *  7 SEL    ------- NOT CONNECTED
- *
- * !!!!! ONLY NEEDED for an ESP32.
- * Given that SCD30 is using clock stretching the driver has been modified to deal with that.
- * A SoftWire library is included in the SCD30 (February 2019) for the ESP32
- *
- * In case a sketch is to interact with both SPS30 and SCD30 on a ESP32 platform running BOTH over I2C,
- * you MUST use the SoftWire I2C that is part of SCD30.
- * For that you need to un-comment in sps30.h the line:  //#define SOFTI2C_ESP32 1
- *
- * In case you do not plan to use the I2C code for the SPS30 you could instead in sps30.h
- * comment out the line : #define INCLUDE_I2C   1. (also saves memory)
- *
- * In case of ESP32, given the SoftWire library, you also have to make a change in SparkfunBME280.h.
- *  Line 39 states:    #include <Wire.h>
- *  Comment that line out : //#include <Wire.h>
- *
- *  NOW include :
-   #if defined(ARDUINO_ARCH_ESP32)
-   #include <SoftWire/SoftWire.h>
-   #else
-   #include <Wire.h>
-   #endif
  *  ================================= PARAMETERS =====================================
  *
- *  From line 180 there are configuration parameters for the program
+ *  From line 160 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -159,9 +141,6 @@
  *      - To select the Sparkfun ESP32 thing board before compiling
  *      - The serial monitor is NOT active (will cause upload errors)
  *      - Press GPIO 0 switch during connecting after compile to start upload to the board
- *
- *  !!!! SCD30 library      : https://github.com/paulvha/scd30
- *  Sparkfun BME280 library : https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
  *
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -176,9 +155,7 @@
  *  NO support, delivered as is, have fun, good luck !!
  */
 
-#include "paulvha_SCD30.h"
 #include "sps30.h"
-#include "SparkFunBME280.h"
 
 /////////////////////////////////////////////////////////////
 /*define communication channel to use for SPS30
@@ -186,15 +163,14 @@
  *   I2C_COMMS              use I2C communication
  *   SOFTWARE_SERIAL        Arduino variants (NOTE)
  *   SERIALPORT             ONLY IF there is NO monitor attached
- *   SERIALPORT1            Arduino MEGA2560, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory
- *   SERIALPORT2            Arduino MEGA2560 and ESP32
- *   SERIALPORT3            Arduino MEGA2560 only for now
+ *   SERIALPORT1            Arduino MEGA2560, Due Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
+ *   SERIALPORT2            Arduino MEGA2560, Due and ESP32
+ *   SERIALPORT3            Arduino MEGA2560 and Due only for now
 
  * NOTE: Softserial has been left in as an option, but as the SPS30 is only
- * working on 115K the connection will probably NOT work on any device.
- */
+ * working on 115K the connection will probably NOT work on any device. */
 /////////////////////////////////////////////////////////////
-#define SP30_COMMS SERIALPORT1
+#define SP30_COMMS I2C_COMMS
 
 /////////////////////////////////////////////////////////////
 /* define RX and TX pin for softserial and Serial1 on ESP32
@@ -208,29 +184,12 @@
  * 0 : no messages
  * 1 : request sending and receiving
  * 2 : request sending and receiving + show protocol errors */
-//////////////////////////////////////////////////////////////
+ //////////////////////////////////////////////////////////////
 #define DEBUG 0
 
 ///////////////////////////////////////////////////////////////
-//                          BME280                           //
+/////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
-/* define the BME280 address.
- * Use if address jumper is closed (SDO - GND) : 0x76.*/
-#define I2CADDR 0x77
-
-/* Define reading in Fahrenheit or Celsius
- *  1 = Celsius
- *  0 = Fahrenheit */
-#define TEMP_TYPE 1
-
-/* define whether hight Meters or Foot
- *  1 = Meters
- *  0 = Foot */
-#define BME_HIGHT 1
-
-//////////////////////////////////////////////////////////////
-////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
-//////////////////////////////////////////////////////////////
 
 // function prototypes (sometimes the pre-processor does not create prototypes themself on ESPxx)
 void serialTrigger(char * mess);
@@ -239,21 +198,14 @@ void Errorloop(char *mess, uint8_t r);
 void GetDeviceInfo();
 bool read_all();
 
-// create constructors
+// create constructor
 SPS30 sps30;
-SCD30 airSensor;
-BME280 mySensor; //Global sensor object
-
-// status
-bool detect_BME280 = false;
-bool SCD30_detected = false;
 
 void setup() {
-  char buf[30];
 
   Serial.begin(115200);
 
-  serialTrigger((char *) "SPS30-Example8: Basic reading + SCD30 + BME280. press <enter> to start");
+  serialTrigger((char *) "SPS30-Example11: Basic reading and status register. press <enter> to start");
 
   Serial.println(F("Trying to connect"));
 
@@ -277,44 +229,8 @@ void setup() {
   // read device info
   GetDeviceInfo();
 
-  // set SCD30
-  airSensor.setDebug(DEBUG);
-
-  // This will init the wire, but NOT start reading
-  if (! airSensor.begin(Wire,false))
-    Serial.println(F("cound not start SCD30"));
-  else
-  {
-    Serial.println(F("Detected SCD30"));
-
-    if (airSensor.getSerialNumber(buf))
-    {
-      Serial.print(F("\tSerial number : "));
-      Serial.println(buf);
-    }
-    else
-      Serial.println(F("could not read serial number"));
-  }
-
-  // set BME280 I2C address.
-  mySensor.setI2CAddress(I2CADDR);
-
-  if (mySensor.beginI2C() == false) // Begin communication over I2C
-    Serial.println(F("The BME280 did not respond. Please check wiring."));
-  else
-  {
-    detect_BME280 = true;
-    Serial.println(F("Detected BME280"));
-  }
-
-  // This will cause readings to occur every two seconds
-  if (airSensor.begin() == false)
-    Serial.println(F("cound not start SCD30"));
-  else
-    SCD30_detected = true;
-
   // start measurement
-  if (sps30.start())  Serial.println(F("Measurement started"));
+  if (sps30.start()) Serial.println(F("Measurement started"));
   else Errorloop((char *) "Could NOT start measurement", 0);
 
   serialTrigger((char *) "Hit <enter> to continue reading");
@@ -326,8 +242,41 @@ void setup() {
 }
 
 void loop() {
-  read_all();
-  delay(3000);
+
+  // if no status issues, it makes sense to read & display the values
+  if (StatusCheck()) {
+    read_all();  // read all data
+  }
+
+  // wait 30000mS = 30 sec
+  delay(30000);
+}
+
+/**
+ * @brief : read and display status register
+ *
+ * @return :
+ * True : No errors found
+ * False: Status issues detected
+ */
+bool StatusCheck()
+{
+  uint8_t st;
+
+  if (sps30.GetStatusReg(&st) == ERR_OK) return(true);
+
+  // a fan failure is only determined after checking each second.
+  if (st & STATUS_SPEED_ERROR)
+      Serial.println(F("WARNING : Fan is turning too fast or too slow"));
+
+  if (st & STATUS_LASER_ERROR)
+    Serial.println(F("ERROR: Laser failure"));
+
+  // this error will be displayed at least once after removing the blockage
+  if (st & STATUS_FAN_ERROR)
+    Serial.println(F("ERROR: Fan failure, fan is / was mechanically blocked or broken"));
+
+  return(false);
 }
 
 /**
@@ -342,7 +291,7 @@ void GetDeviceInfo()
   //try to read serial number
   ret = sps30.GetSerialNumber(buf, 32);
   if (ret == ERR_OK) {
-    Serial.print(F("\tSerial number : "));
+    Serial.print(F("Serial number : "));
     if(strlen(buf) > 0)  Serial.println(buf);
     else Serial.println(F("not available"));
   }
@@ -352,7 +301,7 @@ void GetDeviceInfo()
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
   if (ret == ERR_OK)  {
-    Serial.print(F("\tProduct name  : "));
+    Serial.print(F("Product name  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
     else Serial.println(F("not available"));
@@ -392,9 +341,10 @@ bool read_all()
 
   // loop to get data
   do {
+
     ret = sps30.GetValues(&val);
 
-    // data might not have been ready / retry max 3 times
+    // data might not have been ready
     if (ret == ERR_DATALENGTH){
 
         if (error_cnt++ > 3) {
@@ -414,34 +364,9 @@ bool read_all()
 
   // only print header first time
   if (header) {
-
-    Serial.print(F("==================================== SPS30 ====================================="));
-    if(SCD30_detected) Serial.print(F(" ========= SCD30 =========="));
-
-    if(detect_BME280) Serial.print(F(" =============== BME280 ==============="));
-    Serial.print(F("\n-------------Mass -----------    ------------- Number --------------   -Average-"));
-    if(SCD30_detected) Serial.print(F(" CO2   Humidity Temperature"));
-    if(detect_BME280) Serial.print(F(" Pressure Humidity Altitude Temperature"));
-
-    Serial.print(F("\n     Concentration [μg/m3]             Concentration [#/cm3]             [μm]"));
-    if(SCD30_detected) {
-      Serial.print(F("    [ppm]    [%]      "));
-
-      if (TEMP_TYPE) Serial.print(F("[*C]"));
-      else Serial.print(F("[*F]"));
-    }
-
-    if(detect_BME280) {
-      Serial.print(F("     [hPa]    [%]      "));
-
-      if (BME_HIGHT) Serial.print(F("Meter\t"));
-      else Serial.print(F("Foot\t"));
-
-      if (TEMP_TYPE) Serial.print(F("[*C]"));
-      else Serial.print(F("[*F]"));
-    }
-    Serial.println(F("\nP1.0\tP2.5\tP4.0\tP10\tP0.5\tP1.0\tP2.5\tP4.0\tP10\tPrtSize\n"));
-
+    Serial.println(F("-------------Mass -----------    ------------- Number --------------   -Average-"));
+    Serial.println(F("     Concentration [μg/m3]             Concentration [#/cm3]             [μm]"));
+    Serial.println(F("P1.0\tP2.5\tP4.0\tP10\tP0.5\tP1.0\tP2.5\tP4.0\tP10\tPartSize\n"));
     header = false;
   }
 
@@ -464,32 +389,6 @@ bool read_all()
   Serial.print(val.NumPM10);
   Serial.print(F("\t"));
   Serial.print(val.PartSize);
-
-  if(SCD30_detected) {
-      Serial.print(F("\t  "));
-      Serial.print(airSensor.getCO2());
-      Serial.print(F("\t "));
-      Serial.print(airSensor.getHumidity(), 1);
-      Serial.print(F("\t  "));
-
-      if (TEMP_TYPE)  Serial.print(airSensor.getTemperature(), 2);
-      else Serial.print(airSensor.getTemperatureF(), 2);
-  }
-
-  if(detect_BME280) {
-      Serial.print(F("\t    "));
-      Serial.print(mySensor.readFloatPressure()/100, 0);
-      Serial.print(F("\t"));
-      Serial.print(mySensor.readFloatHumidity(), 1);
-      Serial.print(F("\t"));
-
-      if (BME_HIGHT) Serial.print(mySensor.readFloatAltitudeMeters(), 1);
-      else Serial.print(mySensor.readFloatAltitudeFeet(), 1);
-      Serial.print(F("\t"));
-
-      if (TEMP_TYPE)  Serial.print(mySensor.readTempC(), 2);
-      else Serial.print(mySensor.readTempF(), 2);
-  }
   Serial.print(F("\n"));
 
   return(true);
