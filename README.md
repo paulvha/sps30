@@ -3,7 +3,7 @@
 ## ===========================================================
 
 A program to set instructions and get information from an SPS30. It has been
-tested to run either UART or I2C communcation on ESP32, MEGA2560, ESP8266, UNO and Due.
+tested to run either UART or I2C communication on ESP32, MEGA2560, ESP8266, UNO and Due.
 In the meantime many other boards have been added to the test as well as extended
 interface options. (see below)
 <br> A detailed description of the options and findings are in SPS30.odt
@@ -148,15 +148,18 @@ The embedded approach, and thus backward compatibility, continue to be available
  * changed Example11 to demonstrate reading status register only
  * added Example14 to demonstrate sleep and wakeup function.
 
+### version 1.4.5 / August 2020
+ * added example20 for connecting multiple SPS30 (5!) to single board
+ * updated sps30.odt around multiple SPS30 connected to Mega2560, DUE and ESP32
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
 ## License
 This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
-## Acknowledgements
+## Acknowledgments
 Make sure to read the datasheet from Sensirion, March 2020 version.<br>
 In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
-<br>Take you Sensirion for providing an SPS30 with the firmware 2.2. The Library has no been tested against that version
 ![Uno and SP30](extras/sensirion.png)
 
