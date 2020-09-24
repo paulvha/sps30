@@ -96,6 +96,13 @@
  *  - changed Example11 to demonstrate reading status register only
  *  - added Example14 to demonstrate sleep and wakeup function.
  *
+ * version 1.4.5 / August 2020
+ *  - added example20 for connecting multiple SPS30 (5!) to single board
+ *  - updated sps30.odt around multiple SPS30 connected to Mega2560, DUE and ESP32
+ *
+ * version 1.4.6 / September 2020
+ *  - corrected return code in instruct()
+ *
  *********************************************************************
  */
 
@@ -532,7 +539,7 @@ bool SPS30::Instruct(uint8_t type)
         else if(type == SER_WAKEUP)
             I2C_fill_buffer(I2C_WAKEUP);
         else
-            return(ERR_PARAMETER);
+            return(false);      // update version 1.4.6
 
         ret = I2C_SetPointer();
 

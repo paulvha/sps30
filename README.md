@@ -152,6 +152,9 @@ The embedded approach, and thus backward compatibility, continue to be available
  * added example20 for connecting multiple SPS30 (5!) to single board
  * updated sps30.odt around multiple SPS30 connected to Mega2560, DUE and ESP32
 
+### version 1.4.6 / September 2020
+ * corrected return code in instruct() (Thanks for pointing out Robert R. Fenichel)
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
