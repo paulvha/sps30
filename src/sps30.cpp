@@ -103,6 +103,8 @@
  * version 1.4.6 / September 2020
  *  - corrected return code in instruct()
  *
+ * version 1.4.7 / September 2020
+ *  - corrected another return code in instruct()
  *********************************************************************
  */
 
@@ -549,7 +551,7 @@ bool SPS30::Instruct(uint8_t type)
 
 #if defined INCLUDE_UART
     {    // fill buffer to send
-        if (SHDLC_fill_buffer(type) != true) return(ERR_PARAMETER);
+        if (SHDLC_fill_buffer(type) != true) return(false); // update version 1.4.7
 
         ret = ReadFromSerial();
     }

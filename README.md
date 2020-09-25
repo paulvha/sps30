@@ -155,6 +155,9 @@ The embedded approach, and thus backward compatibility, continue to be available
 ### version 1.4.6 / September 2020
  * corrected return code in instruct() (Thanks for pointing out Robert R. Fenichel)
 
+### version 1.4.7 / September 2020
+ * corrected another return code in instruct() (Thanks for pointing out Robert R. Fenichel)
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
