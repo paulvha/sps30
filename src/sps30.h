@@ -8,7 +8,7 @@
  * The I2C link has a number of restrictions. See detailed document
  *
  * Development environment specifics:
- * Arduino IDE 1.8.12
+ * Arduino IDE 1.8.12 and 1.8.13
  *
  *
  * This program is distributed in the hope that it will be useful,
@@ -95,6 +95,21 @@
  *  - changed Example11 to demonstrate reading status register only
  *  - added Example14 to demonstrate sleep and wakeup function.
  *
+ * version 1.4.5 / August 2020
+ *  - added example20 for connecting multiple SPS30 (5!) to single board
+ *  - updated sps30.odt around multiple SPS30 connected to Mega2560, DUE and ESP32
+ *
+ * version 1.4.6 / September 2020
+ *  - corrected return code in instruct()
+ *
+ * version 1.4.7 / September 2020
+ *  - corrected another return code in instruct()
+ *
+ * version 1.4.8 / October 2020
+ *  - added support for Artemis / Apollo3 for SoftwareSerial detection
+ *  - added check on return code in GetStatusReg()
+ *  - added setClock() for I2C as the Artemis/Apollo3 is standard 400K
+ *  - added flushing in case of Checkzero() (problem in Artemis)
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -228,7 +243,10 @@ enum debug_serial {
     #endif
 
     /* version 1.3.2 added support for SAMD SERCOM detection */
-    #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D         // Depending on definition in wire.h (RingBufferN<256> rxBuffer;)
+    /* version 1.4.8 autodetection for Apollo3 */
+
+    // Depending on definition in wire.h (RingBufferN<256> rxBuffer;)
+    #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || ARDUINO_ARCH_APOLLO3
         #undef  I2C_LENGTH
         #define I2C_LENGTH  256
     #endif
@@ -242,12 +260,13 @@ enum debug_serial {
       /* version 1.3.2 added support for SAMD SERCOM detection */
       /* version 1.3.9 autodetection for SAMD SERCOM and ESP32 to undef softwareSerial */
       /* version 1.4.4 autodetection for Arduino DUE to undef softwareSerial */
+      /* version 1.4.8 autodetection for Apollo3 to undef softwareSerial */
 
-      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32 || defined ARDUINO_SAM_DUE
+      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32 || defined ARDUINO_SAM_DUE || ARDUINO_ARCH_APOLLO3
         #undef  INCLUDE_SOFTWARE_SERIAL
       #else
          #include <SoftwareSerial.h>        // softserial
-      #endif // not defined ARDUINO_ARCH_SAMD & ESP32 & DUE
+      #endif // not defined ARDUINO_ARCH_SAMD & ESP32 & DUE & Apollo3
     #endif // INCLUDE_SOFTWARE_SERIAL
 
 #endif // INCLUDE_UART

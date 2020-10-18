@@ -11,7 +11,7 @@
  * See detailed document
  *
  * Development environment specifics:
- * Arduino IDE 1.8.12
+ * Arduino IDE 1.8.12 and 1.8.13
  *
  * ================ Disclaimer ===================================
  * This program is distributed in the hope that it will be useful,
@@ -105,6 +105,12 @@
  *
  * version 1.4.7 / September 2020
  *  - corrected another return code in instruct()
+ *
+ * version 1.4.8 / October 2020
+ *  - added check on return code in GetStatusReg()
+ *  - added support for Artemis / Apollo3
+ *  - added setClock() for I2C as the Artemis/Apollo3 is standard 400K. SPS30 can handle up to 100K
+ *  - added flushing in case of chk_zero() (handling a problem in Artemis library 2.0.1)
  *********************************************************************
  */
 
@@ -234,7 +240,8 @@ bool SPS30::begin(TwoWire *wirePort)
 {
 #if defined INCLUDE_I2C
     _Sensor_Comms = I2C_COMMS;
-    _i2cPort = wirePort; // Grab which port the user wants us to use
+    _i2cPort = wirePort;            // Grab which port the user wants us to use
+    _i2cPort->setClock(100000);     // 1.4.8 Apollo3 is default 400K (although stated differently in 2.0.1)
     return true;
 #else
     DebugPrintf("I2C communication not enabled\n");
@@ -400,6 +407,8 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
 #else
     {}
 #endif // INCLUDE_UART
+
+    if (ret != ERR_OK) return (ret);    // added 1.4.5
 
     /* Version 1.4.4
      * From the datasheet : If one of the device status flags of type “Error” is set,
@@ -1097,19 +1106,13 @@ bool SPS30::setSerialSpeed()
             else // try softserial
             {
 
-#if defined(INCLUDE_SOFTWARE_SERIAL)
-
-  #if not defined ARDUINO_ARCH_SAMD  && not defined ARDUINO_ARCH_SAM21D    // NO softserial on SAMD
-                static SoftwareSerial swSerial(Serial_RX, Serial_TX);
-                swSerial.begin(_Serial_baud);
-                _serial = &swSerial;
-  #else
-                DebugPrintf("No SoftWare Serial on SAMD\n");
-  #endif // NO softserial on SAMD
-
+#if defined(INCLUDE_SOFTWARE_SERIAL)    // defined / undef in SPS30.h
+            static SoftwareSerial swSerial(Serial_RX, Serial_TX);
+            swSerial.begin(_Serial_baud);
+            _serial = &swSerial;
 #else
-                DebugPrintf("SoftWare Serial not enabled\n");
-                return(false);
+            DebugPrintf("SoftWareSerial not enabled\n");
+            return(false);
 #endif //INCLUDE_SOFTWARE_SERIAL
             }
             break;
@@ -1458,8 +1461,9 @@ uint8_t SPS30::I2C_expect()
  */
 void SPS30::I2C_init()
 {
-    Wire.begin();       // changed 1.4.2.
+    Wire.begin();               // changed 1.4.2.
     _i2cPort = &Wire;
+    _i2cPort->setClock(100000); // 1.4.8 Apollo3 is default 400K (although stated differently)
 }
 
 /**
@@ -1603,7 +1607,14 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
 
             // check for zero termination (Serial and product code)
             if (chk_zero) {
-                if (data[0] == 0 && data[1] == 0) return(ERR_OK);
+
+                if (data[0] == 0 && data[1] == 0) {
+
+                    // flush any bytes pending (added 1.4.8 as the Apollo 2.0.1 was NOT clearing rxBuffer)
+                    // Logged as an issue and expect this could be removed in the future
+                    while (_i2cPort->available()) _i2cPort->read();
+                    return(ERR_OK);
+                }
             }
 
             if (_Receive_BUF_Length >= count) break;
