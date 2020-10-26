@@ -20,7 +20,7 @@ I have not been able to find a good source for that and was glad to buy the Spar
 <br> May 2019 : there is also a library available for Raspberry Pi (https://github.com/paulvha/sps30_on_raspberry)
 
 ## Prerequisites
-Examples 4, 5, 7, 8 and 10 have a dependency on other libraries. Documented in sketch.
+Examples 4, 5, 7, 8, 10, 15 and 16 have a dependency on other libraries. Documented in sketch.
 
 ## Software installation
 Obtain the zip and install like any other
@@ -44,6 +44,9 @@ provide that to the SP30 library. Example12 (for serial communication) and Examp
 The embedded approach, and thus backward compatibility, continue to be available.
 
 ## Versioning
+
+### version 1.4.9 / October 2020
+ * added example15 and Example16 to display the SPS30 output on an LCD
 
 ### version 1.4.8 / October 2020
  * added check on return code in GetStatusReg()
