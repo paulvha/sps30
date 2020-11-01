@@ -12,7 +12,7 @@
  *
  *  Version 1.4.2 Paul van Haastrecht / May 2020
  *  - demonstrate any serial channel selection
- *  
+ *
  *  Version 1.4.9 Paul van Haastrecht / October 2020
  *  - as example12, but now also display the output on an LCD
  *    used the https://www.sparkfun.com/products/16396
@@ -32,16 +32,16 @@
  *  Using Serial1, setting the RX-pin(25) and TX-pin(26)
  *
  *  SPS30 pin     ESP32    LCD
- *  1 VCC -------- VUSB -- RAW 3V3-9
+ *  1 VCC -------- VUSB ----  RAW 3V3-9
  *  2 RX  -------- TX                         pin 26 !! NEEDS A CHANGE ON LINE 221
  *  3 TX  -------- RX                         pin 25 !! NEEDS A CHANGE ON LINE 221
  *  4 Select                                  (NOT CONNECTED)
- *  5 GND -------- GND ----GND
- *                 SDA ---- DA --resistor--|
- *                 SCL ---- SC --resistor--|
- *                 3V3 --------------------|
- *                 
- *  The pull-up resistors should be to 3V3
+ *  5 GND -------- GND ------ GND
+ *                 SDA ------- DA
+ *                 SCL ------- CL
+ *
+ *
+ *  The LCD has pull-up resistors to 3v3 already
  *  GND is close to edge of the SPS30, VCC is most inside pin
  *
  *  Also successfully tested on Serial2 (default pins TX:17, RX: 16)
@@ -49,29 +49,31 @@
  *  ..........................................................
  *  Successfully tested on ATMEGA2560, Due
  *  Used Serial2. No need to set/change RX or TX pin
- *  SPS30 pin     ATMEGA   LCD   
+ *  SPS30 pin     ATMEGA   LCD
  *  1 VCC -------- 5V ---- RAW 3V3 -9
  *  2 RX  -------- TX2                      pin 16
  *  3 TX  -------- RX2                      pin 17
  *  4 Select                                (NOT CONNECTED)
  *  5 GND -------- GND ----GND
- *                 SDA ---- DA --resistor--|
- *                 SCL ---- SC --resistor--|
- *                 3V3 --------------------|
+ *                 SDA ---- DA
+ *                 SCL ---- CL
+ *
+ *  The LCD has pull-up resistors to 3v3 already
+ *  GND is close to edge of the SPS30, VCC is most inside pin
  *
  *  Also tested on Serial1 and Serial3 successfully
  *  .........................................................
  *  Successfully tested on Apollo3 / Artemis ATP
  *  Used Serial1. No need to set/change RX or TX pin
- *  SPS30 pin     ATMEGA   LCD   
+ *  SPS30 pin     ATMEGA   LCD
  *  1 VCC -------- 5V ---- RAW 3V3 -9
- *  2 RX  -------- TX1  
- *  3 TX  -------- RX1 
+ *  2 RX  -------- TX1
+ *  3 TX  -------- RX1
  *  4 Select                                (NOT CONNECTED)
  *  5 GND -------- GND ----GND
- *                 SDA ---- DA --resistor--|
- *                 SCL ---- SC --resistor--|
- *                 3V3 --------------------| 
+ *                 SDA ---- DA
+ *                 SCL ---- CL
+ *
  *  .........................................................
  *  Failed testing on UNO
  *  Had to use softserial as there is not a separate serialport. But as the SPS30
@@ -83,8 +85,8 @@
  *  ***********************************************************************************************
  * https://www.sparkfun.com/products/16396
  *
- * The SparkFun SerLCD is an AVR-based, serial enabled LCD that provides a simple and cost 
- * effective solution for adding a 16x2 Black on RGB Liquid Crystal Display into your project. 
+ * The SparkFun SerLCD is an AVR-based, serial enabled LCD that provides a simple and cost
+ * effective solution for adding a 16x2 Black on RGB Liquid Crystal Display into your project.
  * Both the SPS30 and LCD can be connected on the same WIRE device.
  *
  * The Qwiic adapter should be attached to the display as follows. If you have a model (board or LCD)
@@ -97,16 +99,16 @@
  *
  * Note: If you connect directly to a 5V Arduino instead, you *MUST* use
  * a level-shifter on SDA and SCL to convert the i2c voltage levels down to 3.3V for the display.
- * This can also be achieved with pull-resistors to 3V3 and NOT 5V
+ * !!!! Measured with a scope it turns out that the pull up is already to 3V3 !!!!
  *
  * If ONLYONBUTTON is set, connect a push-button switch between pin BUTTONINPUT and ground.
  *
  *  ================================= PARAMETERS =====================================
- *  From line 132 there are configuration parameters for the program
+ *  From line 140 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *   *  MAKE SURE TO INSTALL http://librarymanager/All#SparkFun_SerLCD.
- *   
+ *
  *  Sparkfun ESP32
  *
  *    Make sure :
@@ -146,32 +148,47 @@
 //////////////////////////////////////////////////////////////////////////
 //                SELECT LCD settings                                   //
 //////////////////////////////////////////////////////////////////////////
+// what are PM2.5 limits good , bad, ugly
+// every region in the world has it's own definition (sometimes multiple (like Canada)
+// for Europe : https://www.airqualitynow.eu/download/CITEAIR-Comparing_Urban_Air_Quality_across_Borders.pdf
+// for US : https://en.wikipedia.org/wiki/Air_quality_index#cite_note-aqi_basic-11
+// for UK : https://en.wikipedia.org/wiki/Air_quality_index
+// for India : https://en.wikipedia.org/wiki/Air_quality_index#cite_note-aqi_basic-11
+// for canada : https://www.publichealthontario.ca/-/media/documents/air-quality-health-index.pdf?la=en
+//  or          https://en.wikipedia.org/wiki/Air_Quality_Health_Index_(Canada)
+//
+// default PM2_LIMITLOW = 55 andPM2_LIMITHIGH=110 is based on Europe
+///////////////////////////////////////////////////////////////////////////
 
 #define LCDBACKGROUNDCOLOR  1    // Normal background color: 1 = white, 2 = red, 3 = green 4 = blue 5 = off
 
-float PM2_LIMIT = 20.0 ;         // Background LCD color will start LCDBACKGROUNDCOLOR and turn to red if 
-                                 // PM2.5 is above this limit to return to LCDBACKGROUNDCOLOR background when below. 
+float PM2_LIMITLOW = 55.0 ;      // Background LCD color will start LCDBACKGROUNDCOLOR and turn to blue if
+                                 // PM2.5 is above this limit to return to LCDBACKGROUNDCOLOR background when below.
                                  // set to zero to disable
-                                 
+
+float PM2_LIMITHIGH = 110.0 ;    // Background LCD color will start LCDBACKGROUNDCOLOR and turn to red if
+                                 // PM2.5 is above this limit to return to LCDBACKGROUNDCOLOR background when below.
+                                 // set to zero to disable
+
 #define ONLYONLIMIT false        // only display the results on the LCD display if the PM2_LIMIT is exceeded
                                  // set to false disables this option.
                                  // do NOT select together with ONLYONBUTTON
                                  // make sure to set PM2_LIMIT > 0 (compile will fail)
-                               
+
 #define ONLYONBUTTON false       // only display the results on the LCD display (red) if the PM2_LIMIT
                                  // is exceeded OR for LCDTIMEOUT seconds if a button is pushed
                                  // set to false disables this option
                                  // do NOT select together with ONLYONLIMIT
-                                 // if PM2_LIMIT is zero the LCD will only display when button is pressed  
-#if ONLYONBUTTON == true                    
+                                 // if PM2_LIMIT is zero the LCD will only display when button is pressed
+#if ONLYONBUTTON == true
 #define BUTTONINPUT  10         // Digital input where button is connected for ONLYONBUTTON between GND
                                  // is ignored if ONLYONBUTTON is set to false
                                  // Artemis / Apollo3 set as D27
                                  // ESP32, Arduino set as 10
 
-#define LCDTIMEOUT 10            // Number of seconds LCD is displayed after button was pressed 
-#endif                           // is ignored if ONLYONBUTTON is set to false        
-    
+#define LCDTIMEOUT 10            // Number of seconds LCD is displayed after button was pressed
+#endif                           // is ignored if ONLYONBUTTON is set to false
+
 
 ///////////////////////////////////////////////////////////////
 ///// NORMALLY NO CHANGES BEYOND THIS POINT NEEDED  ///////////
@@ -180,8 +197,8 @@ float PM2_LIMIT = 20.0 ;         // Background LCD color will start LCDBACKGROUN
 // CHANGE LINE 221:  SP30_COMMS.begin(115200);               //
 ///////////////////////////////////////////////////////////////
 
-// checks will happen at pre-processor time to 
-#if ONLYONLIMIT == true && ONLYONBUTTON == true 
+// checks will happen at pre-processor time to
+#if ONLYONLIMIT == true && ONLYONBUTTON == true
 #error "you can NOT set BOTH ONLYONLIMIT and ONLYONBUTTON to true"
 #endif
 
@@ -207,12 +224,12 @@ void setup() {
 
   // set driver debug level
   sps30.EnableDebugging(DEBUG);
-  
+
   LCDCON.begin();
-  
+
   // initialize LCD
   lcdinit();
-  
+
   Serial.println(F("Trying to connect."));
 
   // Initialize communication port
@@ -226,21 +243,21 @@ void setup() {
     lcd.setBacklight(255, 0, 0);    // bright red
     lcd.clear();
     lcd.write("SPS30 comms");
-    lcd.setCursor(0, 1);            // pos 50, line 1
+    lcd.setCursor(0, 1);            // pos 0, line 1
     lcd.write("Error");
     Errorloop((char *) "Could not set serial communication channel.", 0);
   }
-  
+
   // check for SPS30 connection
   if (sps30.probe()) Serial.println(F("Detected SPS30."));
   else {
     lcd.setBacklight(255, 0, 0);    // bright red
     lcd.clear();
     lcd.write("SPS30 probe");
-    lcd.setCursor(0, 1);            // pos 50, line 1
+    lcd.setCursor(0, 1);            // pos 0, line 1
     lcd.write("Error");
     Errorloop((char *) "could not probe / connect with SPS30.", 0);
-  } 
+  }
 
   // reset SPS30 connection
   if (! sps30.reset()) {
@@ -252,8 +269,8 @@ void setup() {
     Errorloop((char *) "could not reset.", 0);
   }
 
-#if ONLYONLIMIT == true 
-  if (PM2_LIMIT == 0) {
+#if ONLYONLIMIT == true
+  if (PM2_LIMITLOW == 0 || PM2_LIMITHIGH == 0) {
     lcd.setBacklight(255, 0, 0);    // bright red
     lcd.clear();
     lcd.write("ERROR PM2 LIMIT");
@@ -272,7 +289,7 @@ void setup() {
     lcd.setBacklight(255, 0, 0);    // bright red
     lcd.clear();
     lcd.write("Could not start");
-    lcd.setCursor(0, 1);            // pos 5, line 1
+    lcd.setCursor(0, 1);            // pos 0, line 1
     lcd.write("measurement");
     Errorloop((char *) "Could NOT start measurement", 0);
   }
@@ -280,7 +297,7 @@ void setup() {
 
 void loop() {
   read_all();
-  
+
   // delay for 3 seconds but capture button pressed
   for (int i=0; i < 10; i++){
     delay(300);
@@ -301,12 +318,26 @@ void GetDeviceInfo()
   ret = sps30.GetSerialNumber(buf, 32);
   if (ret == ERR_OK) {
     Serial.print(F("Serial number : "));
-    if(strlen(buf) > 0)  Serial.println(buf);
-    else Serial.println(F("not available"));
+    lcd.setCursor(0, 0);            // pos 0, line 0
+    lcd.write("Snr:");
+    lcd.setCursor(0, 1);            // pos 0, line 1
+    if(strlen(buf) > 0)  {
+      Serial.println(buf);
+      lcd.write(buf);
+    }
+    else{ 
+      Serial.println(F("not available"));
+      lcd.write("Not available");
+    }
   }
-  else
-    ErrtoMess((char *) "could not get serial number", ret);
-
+  else{
+   lcd.setCursor(0, 0);            // pos 0, line 0
+   lcd.write("Error during");
+   lcd.setCursor(0, 1);            // pos 0, line 1
+   lcd.write("reading snr.");
+      
+   ErrtoMess((char *) "could not get serial number", ret);
+  }
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
   if (ret == ERR_OK)  {
@@ -335,6 +366,8 @@ void GetDeviceInfo()
 
   Serial.print(F("Library level : "));  Serial.print(v.DRV_major);
   Serial.print(".");  Serial.println(v.DRV_minor);
+
+  delay(5000);
 }
 
 /**
@@ -400,19 +433,19 @@ bool read_all()
   Serial.print(F("\n"));
 
   printLCD(true);
-  
+
   return(true);
 }
 
 
-// checks for button pressed to set the LCD on and keep on for 
+// checks for button pressed to set the LCD on and keep on for
 // LCDTIMEOUT seconds after button has been released.
 // return true to turn on OR false to turn / stay off.
 bool checkButton()
 {
 #if ONLYONBUTTON == true
   static unsigned long startTime = 0;
-  
+
   // button pressed ?
   if (! digitalRead(BUTTONINPUT)){
     startTime = millis();
@@ -421,12 +454,12 @@ bool checkButton()
   if (startTime > 0) {
     if (millis() - startTime < (LCDTIMEOUT*1000))  return true;
     else  startTime = 0;      // reset starttime
-  }    
+  }
 
   return false;
 
 #endif //ONLYONBUTTON
-  return true;  
+  return true;
 }
 
 // initialize the LCD
@@ -443,7 +476,7 @@ void lcdinit()
 // set requested background color
 void lcdsetbackground()
 {
-  
+
 #if ONLYONLIMIT == true
   lcd.setBacklight(0, 0, 0);  // off
   return;
@@ -457,7 +490,7 @@ void lcdsetbackground()
 #endif //ONLYONBUTTON
 
   switch(LCDBACKGROUNDCOLOR){
-    
+
     case 2:   // red
       lcd.setBacklight(255, 0, 0); // bright red
       break;
@@ -481,28 +514,48 @@ void lcdsetbackground()
 void printLCD(bool dd)
 {
   char buf[10];
-  static bool limitWasSet = false;
+  static bool limitLowWasSet = false;
+  static bool limitHighWasSet = false;
   static bool MeasureInd = true;
-  
-  // change background on limit (if limit was set)
-  if (PM2_LIMIT > 0) {
-  
-    if (val.MassPM2 > PM2_LIMIT){
+
+  // change background to red on high limit (if limit was set)
+  if (PM2_LIMITHIGH > 0) {
+
+    if (val.MassPM2 > PM2_LIMITHIGH){
       // change once..
-      if(! limitWasSet){
+      if(! limitHighWasSet){
         lcd.setBacklight(255, 0, 0); // bright red
-        limitWasSet = true;
+        limitHighWasSet = true;
       }
     }
-    else if (limitWasSet){
-      lcdsetbackground();           // reset to original request
-      limitWasSet = false;
+    else if (limitHighWasSet){
+      lcd.setBacklight(0, 0, 255); // bright blue
+      limitHighWasSet = false;
     }
   }
-  
-// only display if limit has been reached  
+
+  // change background on limit (if limit was set)
+  if (PM2_LIMITLOW > 0) {
+
+    if ( ! limitHighWasSet ){
+
+        if (val.MassPM2 > PM2_LIMITLOW){
+          // change once..
+          if(! limitLowWasSet){
+            lcd.setBacklight(0, 0, 255); // bright blue
+            limitLowWasSet = true;
+          }
+        }
+        else if (limitLowWasSet){
+          lcdsetbackground();           // reset to original request
+          limitLowWasSet = false;
+        }
+    }
+  }
+
+// only display if limit has been reached
 #if ONLYONLIMIT == true
-  if(! limitWasSet) {
+  if(! limitLowWasSet || ! limitLowWasSet) {
     lcd.clear();
     return;
   }
@@ -520,18 +573,18 @@ void printLCD(bool dd)
   // if no data available indicate with . and return
   if (!dd) {
     lcd.setCursor(15, 0);            // pos 15, line 0
-    
-    // display measurement indicator 
+
+    // display measurement indicator
     if (MeasureInd)  lcd.write(".");
     else lcd.write(" ");
-    
+
     MeasureInd = !MeasureInd;
     return;
   }
-  
+
   // just in case next no-data, start display .
   MeasureInd = true;
-  
+
   lcd.clear();
   lcd.write("PM1: PM2: PM10:");
 
@@ -550,16 +603,16 @@ void printLCD(bool dd)
 
 // This is a workaround as sprintf on Artemis/Apollo3 is not recognizing %f (returns empty)
 // based on source print.cpp/ printFloat
-int FromFloat(char *buf, double number, uint8_t digits) 
-{ 
+int FromFloat(char *buf, double number, uint8_t digits)
+{
   char t_buf[10];
   buf[0] = 0x0;
-  
+
   if (isnan(number)) {
     strcpy(buf,"nan");
     return 3;
   }
-  
+
   if (isinf(number)) {
     strcpy(buf,"inf");
     return 3;
@@ -569,7 +622,7 @@ int FromFloat(char *buf, double number, uint8_t digits)
     strcpy(buf,"ovf");
     return 3;
   }
-    
+
   // Handle negative numbers
   if (number < 0.0)
   {
@@ -581,7 +634,7 @@ int FromFloat(char *buf, double number, uint8_t digits)
   double rounding = 0.5;
   for (uint8_t i=0; i<digits; ++i)
     rounding /= 10.0;
-  
+
   number += rounding;
 
   // Extract the integer part of the number and print it
@@ -590,12 +643,12 @@ int FromFloat(char *buf, double number, uint8_t digits)
 
   sprintf(t_buf,"%ld", int_part);
   strcat(buf,t_buf);
-  
+
   if (digits > 0) {
-    
+
     // Print the decimal point, but only if there are digits beyond
-    strcat(buf,".");  
-  
+    strcat(buf,".");
+
     // Extract digits from the remainder one at a time
     while (digits-- > 0)
     {
@@ -603,8 +656,8 @@ int FromFloat(char *buf, double number, uint8_t digits)
       unsigned int toPrint = (unsigned int)(remainder);
       sprintf(t_buf,"%d", toPrint);
       strcat(buf,t_buf);
-      remainder -= toPrint; 
-    } 
+      remainder -= toPrint;
+    }
   }
 
   return (int) strlen(buf);
