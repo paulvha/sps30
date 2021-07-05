@@ -111,6 +111,12 @@
  *  - added support for Artemis / Apollo3
  *  - added setClock() for I2C as the Artemis/Apollo3 is standard 400K. SPS30 can handle up to 100K
  *  - added flushing in case of chk_zero() (handling a problem in Artemis library 2.0.1)
+ *
+ * version 1.4.10 / February 2021
+ *  - Fixed typos in autodetection for Nano BLE 33 / Apollo3 for SoftwareSerial detection
+ *
+ * version 1.4.11 / July 2021
+ *  - fixed error handling in Getvalues()
  *********************************************************************
  */
 
@@ -926,6 +932,9 @@ uint8_t SPS30::GetValues(struct sps_values *v)
                 // the I2C read_buffer.
 
                 ret = I2C_SetPointer_Read(_I2C_Max_bytes);
+
+                if (ret != ERR_OK) return (ret);        // bug 1.4.11
+
                 break;
             }
             else

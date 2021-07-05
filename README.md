@@ -45,6 +45,12 @@ The embedded approach, and thus backward compatibility, continue to be available
 
 ## Versioning
 
+### version 1.4.11 / July 2021
+ * Fixed error handling in Getvalues()
+
+### version 1.4.10 / February 2021
+ * Fixed typos in autodetection for Nano BLE 33 / Apollo3 for SoftwareSerial detection
+
 ### version 1.4.9 / October 2020
  * added example15 and Example16 to display the SPS30 output on an LCD
 
@@ -175,7 +181,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgments
 ### Make sure to read the datasheet from Sensirion, March 2020 version.<br>
-In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
+### In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
 ![Uno and SP30](extras/sensirion.png)
 <br>
 
