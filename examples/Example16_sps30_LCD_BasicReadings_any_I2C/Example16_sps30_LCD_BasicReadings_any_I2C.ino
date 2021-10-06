@@ -17,6 +17,9 @@
  *  - as example13, but now also display the output on an LCD
  *    used the https://www.sparkfun.com/products/16396
  *
+ *  Version 1.4.10 Paul van Haastrecht / October 2021
+ *  - added selecting I2C Speed
+ *
  *  =========================  Highlevel description ================================
  *
  *  This basic reading example sketch will connect to an SPS30 for getting data and
@@ -116,7 +119,7 @@
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 152 there are configuration parameters for the program
+ *  From line 149 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  MAKE SURE TO INSTALL http://librarymanager/All#SparkFun_SerLCD.
@@ -148,6 +151,14 @@
 /////////////////////////////////////////////////////////////
 #define SP30_COMMS Wire
 #define LCDCON Wire
+
+/////////////////////////////////////////////////////////////
+// Although the SPS30 (according to the datasheet) can handle 100K/s
+// based on feedback from Urs Uzinger he could only the SPS30 to work
+// for longer time stable at 50K.
+//  If you want to test that remove comments from define line below
+/////////////////////////////////////////////////////////////
+//#define USE_50K_SPEED 1
 
 /////////////////////////////////////////////////////////////
 /* define driver debug
@@ -329,12 +340,12 @@ void GetDeviceInfo()
     lcd.setCursor(0, 0);            // pos 0, line 0
     lcd.write("Snr:");
     lcd.setCursor(0, 1);            // pos 0, line 1
-    
+
     if(strlen(buf) > 0)  {
       Serial.println(buf);
       lcd.write(buf);
     }
-    else{ 
+    else{
       Serial.println(F("not available"));
       lcd.write("Not available");
     }
@@ -344,10 +355,10 @@ void GetDeviceInfo()
    lcd.write("Error during");
    lcd.setCursor(0, 1);            // pos 0, line 1
    lcd.write("reading snr.");
-      
+
    ErrtoMess((char *) "could not get serial number", ret);
   }
-  
+
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
   if (ret == ERR_OK)  {
@@ -385,8 +396,13 @@ bool read_all()
 
   // loop to get data
   do {
-
+#ifdef USE_50K_SPEED                // update 1.4.10
+    SP30_COMMS.setClock(50000);     // set to 50K
     ret = sps30.GetValues(&val);
+    SP30_COMMS.setClock(100000);    // reset to 100K in case other sensors are on the same I2C-channel
+#else
+    ret = sps30.GetValues(&val);
+#endif
 
     // data might not have been ready
     if (ret == ERR_DATALENGTH){

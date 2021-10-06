@@ -13,6 +13,9 @@
  *  Version 1.4.2 Paul van Haastrecht / May 2020
  *  - demonstrate the any I2C channel selection
  *
+ *  Version 1.4.3 Paul van Haastrecht / October 2021
+ *  - added selecting I2C Speed
+ *
  *  =========================  Highlevel description ================================
  *
  *  This basic reading example sketch will connect to an SPS30 for getting data and
@@ -84,7 +87,7 @@
  *
  *  ================================= PARAMETERS =====================================
  *
- *  From line 112 there are configuration parameters for the program
+ *  From line 115 there are configuration parameters for the program
  *
  *  ================================== SOFTWARE ======================================
  *  Sparkfun ESP32
@@ -113,6 +116,14 @@
 //    define communication channel to use for SPS30
 /////////////////////////////////////////////////////////////
 #define SP30_COMMS Wire
+
+/////////////////////////////////////////////////////////////
+// Although the SPS30 (according to the datasheet) can handle 100K/s
+// based on feedback from Urs Uzinger he could only the SPS30 to work
+// for longer time stable at 50K.
+// If you want to test that remove comments from define line below
+/////////////////////////////////////////////////////////////
+//#define USE_50K_SPEED 1
 
 /////////////////////////////////////////////////////////////
 /* define driver debug
@@ -235,7 +246,13 @@ bool read_all()
   // loop to get data
   do {
 
+#ifdef USE_50K_SPEED                // update 1.4.3
+    SP30_COMMS.setClock(50000);     // set to 50K
     ret = sps30.GetValues(&val);
+    SP30_COMMS.setClock(100000);    // reset to 100K in case other sensors are on the same I2C-channel
+#else
+    ret = sps30.GetValues(&val);
+#endif
 
     // data might not have been ready
     if (ret == ERR_DATALENGTH){

@@ -45,6 +45,9 @@ The embedded approach, and thus backward compatibility, continue to be available
 
 ## Versioning
 
+### version 1.4.12 / October 2021
+ * Updated example13 and example16 to allow lower I2C speed for stability
+
 ### version 1.4.11 / July 2021
  * Fixed error handling in Getvalues()
 
@@ -180,6 +183,7 @@ The embedded approach, and thus backward compatibility, continue to be available
 This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgments
+
 ### Make sure to read the datasheet from Sensirion, March 2020 version.<br>
 ### In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
 ![Uno and SP30](extras/sensirion.png)
@@ -191,3 +195,6 @@ This is not an issue - just a note to help others that may have damaged or lost 
 Make sure you pick the correct type, which is 1.25mm 5 Pin.
 (10 Sets JST SH 1.0 ZH 1.5 PH 2.0 XH 2.5 Housing Connector Female Male Wire)
 
+### October 2021: Input from Urs Utzinger
+
+Reducing the I2C speed to 50K instead of 100K improves longer time stability.
