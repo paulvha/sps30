@@ -198,3 +198,12 @@ Make sure you pick the correct type, which is 1.25mm 5 Pin.
 ### October 2021: Input from Urs Utzinger
 
 Reducing the I2C speed to 50K instead of 100K improves longer time stability.
+
+### October 2021 : Input from Nkea
+
+I also found another compatible connector. I also recommend buying spare crimp contacts as they are very small and fragile. Needs a crimp tool. I use a Connector Pliers model PA-09 by Engineer I had from other works. It may be useful if special lengths are needed of there is no stock on JST ones
+
+![Mouser housing](https://www.mouser.es/ProductDetail/Wurth-Elektronik/648005113322?qs=%2Fha2pyFaduguH2zIpdkgUWxmzUvrTES979PXEupx7lQusLC5mK%2FQfQ%3D%3D)
+
+![Mouser contacts](https://www.mouser.es/ProductDetail/Wurth-Elektronik/64800113722DEC?qs=%2Fha2pyFaduguH2zIpdkgUUfd6dp6pTTujW8FuBzdSDO2pxvJN95p5w%3D%3D)
+
