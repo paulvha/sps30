@@ -245,7 +245,6 @@ void setup() {
 
   // reset SPS30 connection
   if (! sps30.reset()) Errorloop((char *) "could not reset.", 0);
-  }
 
   // read device info
   GetDeviceInfo();
