@@ -45,6 +45,9 @@ The embedded approach, and thus backward compatibility, continue to be available
 
 ## Versioning
 
+### version 1.4.13 / January 2022
+ * Different corrections in SPS30.odt
+
 ### version 1.4.12 / October 2021
  * Updated example13 and example16 to allow lower I2C speed for stability
 
