@@ -335,7 +335,7 @@ void GetDeviceInfo()
 
   //try to read serial number
   ret = sps30.GetSerialNumber(buf, 32);
-  if (ret == ERR_OK) {
+  if (ret == SPS30_ERR_OK) {
     Serial.print(F("Serial number : "));
     lcd.setCursor(0, 0);            // pos 0, line 0
     lcd.write("Snr:");
@@ -361,7 +361,7 @@ void GetDeviceInfo()
 
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
-  if (ret == ERR_OK)  {
+  if (ret == SPS30_ERR_OK)  {
     Serial.print(F("Product name  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
@@ -372,7 +372,7 @@ void GetDeviceInfo()
 
   // try to get version info
   ret = sps30.GetVersion(&v);
-  if (ret != ERR_OK) {
+  if (ret != SPS30_ERR_OK) {
     Serial.println(F("Can not read version info."));
     return;
   }
@@ -405,7 +405,7 @@ bool read_all()
 #endif
 
     // data might not have been ready
-    if (ret == ERR_DATALENGTH){
+    if (ret == SPS30_ERR_DATALENGTH){
 
         if (error_cnt++ > 3) {
           ErrtoMess((char *) "Error during reading values: ",ret);
@@ -416,13 +416,13 @@ bool read_all()
     }
 
     // if other error
-    else if(ret != ERR_OK) {
+    else if(ret != SPS30_ERR_OK) {
       ErrtoMess((char *) "Error during reading values: ",ret);
       printLCD(false);
       return(false);
     }
 
-  } while (ret != ERR_OK);
+  } while (ret != SPS30_ERR_OK);
 
   // only print header first time
   if (header) {

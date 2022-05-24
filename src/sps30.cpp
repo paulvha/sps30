@@ -130,18 +130,18 @@
 
 #if not defined SMALLFOOTPRINT
 /* error descripton */
-struct Description ERR_desc[11] =
+struct Description SPS30_ERR_desc[11] =
 {
-  {ERR_OK, "All good"},
-  {ERR_DATALENGTH, "Wrong data length for this command (too much or little data)"},
-  {ERR_UNKNOWNCMD, "Unknown command"},
-  {ERR_ACCESSRIGHT, "No access right for command"},
-  {ERR_PARAMETER, "Illegal command parameter or parameter out of allowed range"},
-  {ERR_OUTOFRANGE, "Internal function argument out of range"},
-  {ERR_CMDSTATE, "Command not allowed in current state"},
-  {ERR_TIMEOUT, "No response received within timeout period"},
-  {ERR_PROTOCOL, "Protocol error"},
-  {ERR_FIRMWARE, "Not supported on this SPS30 firmware level"},
+  {SPS30_ERR_OK, "All good"},
+  {SPS30_ERR_DATALENGTH, "Wrong data length for this command (too much or little data)"},
+  {SPS30_ERR_UNKNOWNCMD, "Unknown command"},
+  {SPS30_ERR_ACCESSRIGHT, "No access right for command"},
+  {SPS30_ERR_PARAMETER, "Illegal command parameter or parameter out of allowed range"},
+  {SPS30_ERR_OUTOFRANGE, "Internal function argument out of range"},
+  {SPS30_ERR_CMDSTATE, "Command not allowed in current state"},
+  {SPS30_ERR_TIMEOUT, "No response received within timeout period"},
+  {SPS30_ERR_PROTOCOL, "Protocol error"},
+  {SPS30_ERR_FIRMWARE, "Not supported on this SPS30 firmware level"},
   {0xff, "Unknown Error"}
 };
 #endif // SMALLFOOTPRINT
@@ -316,7 +316,7 @@ bool SPS30::probe() {
 
     SPS30_version v;
 
-    if (GetVersion(&v) == ERR_OK) {
+    if (GetVersion(&v) == SPS30_ERR_OK) {
         _FW_Major = v.major;
         _FW_Minor = v.minor;
         return(true);
@@ -378,8 +378,8 @@ bool SPS30::FWCheck(uint8_t major, uint8_t minor) {
  *
  * Return obtain result
  * return
- *  ERR_OK = ok, no isues found
- *  else ERR_OUTOFRANGE, issues found
+ *  SPS30_ERR_OK = ok, no isues found
+ *  else SPS30_ERR_OUTOFRANGE, issues found
  */
 uint8_t SPS30::GetStatusReg(uint8_t *status) {
     uint8_t ret, offset;
@@ -387,7 +387,7 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
     *status = 0x0;
 
     // check for minimum Firmware level
-    if(! FWCheck(2,2)) return(ERR_FIRMWARE);
+    if(! FWCheck(2,2)) return(SPS30_ERR_FIRMWARE);
 
 #if defined INCLUDE_I2C
     if (_Sensor_Comms == I2C_COMMS) {
@@ -406,7 +406,7 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
 #if defined INCLUDE_UART
     {
         // fill buffer to read_status register and clear after reading
-        if ( ! SHDLC_fill_buffer(SER_READ_STATUS) ) return(ERR_PARAMETER);
+        if ( ! SHDLC_fill_buffer(SER_READ_STATUS) ) return(SPS30_ERR_PARAMETER);
         ret = ReadFromSerial();
         offset = 5;
     }
@@ -414,7 +414,7 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
     {}
 #endif // INCLUDE_UART
 
-    if (ret != ERR_OK) return (ret);    // added 1.4.5
+    if (ret != SPS30_ERR_OK) return (ret);    // added 1.4.5
 
     /* Version 1.4.4
      * From the datasheet : If one of the device status flags of type “Error” is set,
@@ -428,9 +428,9 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
     if (_Receive_BUF[offset + 3] & 0b00100000) *status |= STATUS_LASER_ERROR;
     if (_Receive_BUF[offset + 3] & 0b00010000) *status |= STATUS_FAN_ERROR;
 
-    if (*status != 0x0) return(ERR_OUTOFRANGE);
+    if (*status != 0x0) return(SPS30_ERR_OUTOFRANGE);
 
-    return(ERR_OK);
+    return(SPS30_ERR_OK);
 }
 
 /**
@@ -445,45 +445,45 @@ uint8_t SPS30::GetStatusReg(uint8_t *status) {
  * defined in datasheet SPS30 March 2020 page 5
  *
  * Return
- *  ERR_OK = ok
+ *  SPS30_ERR_OK = ok
  *  else error
  */
 uint8_t SPS30::SetOpMode( uint8_t mode )
 {
 #if defined SMALLFOOTPRINT                  // add 1.4.1
-   return(ERR_UNKNOWNCMD);
+   return(SPS30_ERR_UNKNOWNCMD);
 #else
 
     // check for minimum Firmware level
-    if(! FWCheck(2,0)) return(ERR_FIRMWARE);
+    if(! FWCheck(2,0)) return(SPS30_ERR_FIRMWARE);
 
     // set to sleep
     if (mode == SER_SLEEP) {
 
         // if already in sleep
-        if (_sleep) return(ERR_OK);
+        if (_sleep) return(SPS30_ERR_OK);
 
         // if not idle
         if (_started) {
-            if (! stop()) return(ERR_PROTOCOL);
+            if (! stop()) return(SPS30_ERR_PROTOCOL);
             _WasStarted = true;
         }
         else
             _WasStarted = false;
 
         // go to sleep
-        if (! Instruct(SER_SLEEP))  return(ERR_PROTOCOL);
+        if (! Instruct(SER_SLEEP))  return(SPS30_ERR_PROTOCOL);
         _sleep = true;
     }
     // wake-up
     else if (mode == SER_WAKEUP) {
 
         // if not in sleep
-        if (! _sleep) return(ERR_OK);
+        if (! _sleep) return(SPS30_ERR_OK);
 
         // send 2 x WAKE-up on I2C to toggle SPS30
         if (_Sensor_Comms == I2C_COMMS){
-            if (! Instruct(SER_WAKEUP))  return(ERR_PROTOCOL);
+            if (! Instruct(SER_WAKEUP))  return(SPS30_ERR_PROTOCOL);
         }
 #if defined INCLUDE_UART                    // add 1.4.1
         else {  // on serial send 0xff
@@ -494,7 +494,7 @@ uint8_t SPS30::SetOpMode( uint8_t mode )
         // give some time for the SPS30 to act on toggle as WAKEUP must be sent in 100mS
         delay(10);
 
-        if (! Instruct(SER_WAKEUP))  return(ERR_PROTOCOL);
+        if (! Instruct(SER_WAKEUP))  return(SPS30_ERR_PROTOCOL);
 
         // give time for SPS30 to go idle
         delay(100);
@@ -504,13 +504,13 @@ uint8_t SPS30::SetOpMode( uint8_t mode )
 
         // was SPS30 started before instructed to go to sleep
         if (_WasStarted) {
-            if(! start()) return(ERR_PROTOCOL);
+            if(! start()) return(SPS30_ERR_PROTOCOL);
         }
     }
     else
-        return(ERR_PARAMETER);
+        return(SPS30_ERR_PARAMETER);
 
-    return(ERR_OK);
+    return(SPS30_ERR_OK);
 #endif // SMALLFOOTPRINT
 }
 
@@ -574,7 +574,7 @@ bool SPS30::Instruct(uint8_t type)
     {}
 #endif // INCLUDE_UART
 
-    if (ret == ERR_OK){
+    if (ret == SPS30_ERR_OK){
 
         if (type == SER_START_MEASUREMENT) {
             _started = true;
@@ -604,7 +604,7 @@ bool SPS30::Instruct(uint8_t type)
  * @brief Read version info
  *
  * return
- *  ERR_OK = ok
+ *  SPS30_ERR_OK = ok
  *  else error
  */
 uint8_t SPS30::GetVersion(SPS30_version *v)
@@ -628,7 +628,7 @@ uint8_t SPS30::GetVersion(SPS30_version *v)
 #if defined INCLUDE_UART
     {
         // fill buffer to send
-        if ( ! SHDLC_fill_buffer(SER_READ_VERSION) ) return(ERR_PARAMETER);
+        if ( ! SHDLC_fill_buffer(SER_READ_VERSION) ) return(SPS30_ERR_PARAMETER);
 
         ret = ReadFromSerial();
         offset = 5;
@@ -658,7 +658,7 @@ uint8_t SPS30::GetVersion(SPS30_version *v)
  * @param len     : length of the buffer
  *
  * return
- *  ERR_OK = ok
+ *  SPS30_ERR_OK = ok
  *  else error
  */
 uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
@@ -687,7 +687,7 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
             _Receive_BUF[8] = 0x0;   // terminate
         }
         else
-            return (ERR_PARAMETER);
+            return (SPS30_ERR_PARAMETER);
 
         offset = 0;
     }
@@ -697,7 +697,7 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
 #if defined INCLUDE_UART
     {
         // fill buffer to send
-        if ( ! SHDLC_fill_buffer(type) ) return(ERR_PARAMETER);
+        if ( ! SHDLC_fill_buffer(type) ) return(SPS30_ERR_PARAMETER);
 
         ret = ReadFromSerial();
 
@@ -707,7 +707,7 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
     {}
 #endif // INCLUDE_UART
 
-    if (ret != ERR_OK) return (ret);
+    if (ret != SPS30_ERR_OK) return (ret);
 
     // get data
     for (i = 0; i < len ; i++) {
@@ -715,7 +715,7 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
         if (ser[i] == 0x0) break;
     }
 
-    return(ERR_OK);
+    return(SPS30_ERR_OK);
 }
 
 /**
@@ -723,7 +723,7 @@ uint8_t SPS30::Get_Device_info(uint8_t type, char *ser, uint8_t len)
  * @param val : The new interval value
  *
  * Return:
- *  OK = ERR_OK
+ *  OK = SPS30_ERR_OK
  *  else error
  */
 uint8_t SPS30::SetAutoCleanInt(uint32_t val)
@@ -736,7 +736,7 @@ uint8_t SPS30::SetAutoCleanInt(uint32_t val)
 
         I2C_fill_buffer(I2C_SET_AUTO_CLEANING_INTERVAL, val);
 
-        if (I2C_SetPointer() == ERR_OK)
+        if (I2C_SetPointer() == SPS30_ERR_OK)
         {
             /** Datasheet page 15: Note that after writing a new interval, this will be activated immediately.
              * However, if the interval register is read out after setting the new value, the previous value
@@ -756,16 +756,16 @@ uint8_t SPS30::SetAutoCleanInt(uint32_t val)
             // do we need to restart ?
             if (r) {if (save_started) r = start();}
 
-            if (r) return(ERR_OK);
+            if (r) return(SPS30_ERR_OK);
         }
 
-        return(ERR_PROTOCOL);
+        return(SPS30_ERR_PROTOCOL);
     }
 #endif // INCLUDE_I2C
 
 #if defined INCLUDE_UART
     // fill buffer to send
-    if (SHDLC_fill_buffer(SER_WRITE_AUTO_CLEANING, val) != true) return(ERR_PARAMETER);
+    if (SHDLC_fill_buffer(SER_WRITE_AUTO_CLEANING, val) != true) return(SPS30_ERR_PARAMETER);
 
     return(ReadFromSerial());
 #endif //INCLUDE_UART
@@ -794,7 +794,7 @@ float SPS30::Get_Single_Value(uint8_t value)
     // if already reported this value
     if (Reported[value]) {
         // do a reload
-        if (GetValues(&v) != ERR_OK) return(-1);
+        if (GetValues(&v) != SPS30_ERR_OK) return(-1);
         memset(Reported,0x0,sizeof(Reported));
     }
 
@@ -837,7 +837,7 @@ void SPS30::SetSerialPin(uint8_t rx, uint8_t tx)
  * The default cleaning interval is set to 604’800 seconds (i.e., 168 hours or 1 week).
  *
  * Return:
- *  OK = ERR_OK
+ *  OK = SPS30_ERR_OK
  *  else error
  */
 uint8_t SPS30::GetAutoCleanInt(uint32_t *val)
@@ -860,7 +860,7 @@ uint8_t SPS30::GetAutoCleanInt(uint32_t *val)
 #if defined INCLUDE_UART
     {
         // fill buffer to send
-        if (SHDLC_fill_buffer(SER_READ_AUTO_CLEANING) != true) return(ERR_PARAMETER);
+        if (SHDLC_fill_buffer(SER_READ_AUTO_CLEANING) != true) return(SPS30_ERR_PARAMETER);
 
         ret = ReadFromSerial();
 
@@ -890,12 +890,12 @@ void SPS30::GetErrDescription(uint8_t code, char *buf, int len)
 #else
     int i=0;
 
-    while (ERR_desc[i].code != 0xff) {
-        if(ERR_desc[i].code == code)  break;
+    while (SPS30_ERR_desc[i].code != 0xff) {
+        if(SPS30_ERR_desc[i].code == code)  break;
         i++;
     }
 
-    strncpy(buf, ERR_desc[i].desc, len);
+    strncpy(buf, SPS30_ERR_desc[i].desc, len);
 #endif // SMALLFOOTPRINT
 }
 
@@ -904,7 +904,7 @@ void SPS30::GetErrDescription(uint8_t code, char *buf, int len)
  * @param : pointer to structure to store
  *
  * return
- *  ERR_OK = ok
+ *  SPS30_ERR_OK = ok
  *  else error
  */
 uint8_t SPS30::GetValues(struct sps_values *v)
@@ -914,7 +914,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
 
     // measurement started already?
     if ( !_started ) {
-        if ( ! start() ) return(ERR_CMDSTATE);
+        if ( ! start() ) return(SPS30_ERR_CMDSTATE);
     }
 #if defined INCLUDE_I2C
     if (_Sensor_Comms == I2C_COMMS) {
@@ -933,7 +933,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
 
                 ret = I2C_SetPointer_Read(_I2C_Max_bytes);
 
-                if (ret != ERR_OK) return (ret);        // bug 1.4.11
+                if (ret != SPS30_ERR_OK) return (ret);        // bug 1.4.11
 
                 break;
             }
@@ -943,7 +943,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
             }
         } while(loop++ < 3);
 
-        if (loop == 3) return(ERR_TIMEOUT);
+        if (loop == 3) return(SPS30_ERR_TIMEOUT);
     }
     else
 #endif // INCLUDE_I2C
@@ -952,18 +952,18 @@ uint8_t SPS30::GetValues(struct sps_values *v)
         offset = 5;
 
         // fill buffer to send
-        if (SHDLC_fill_buffer(SER_READ_MEASURED_VALUE) != true) return(ERR_PARAMETER);
+        if (SHDLC_fill_buffer(SER_READ_MEASURED_VALUE) != true) return(SPS30_ERR_PARAMETER);
 
         ret = ReadFromSerial();
 
-        if (ret != ERR_OK) return (ret);
+        if (ret != SPS30_ERR_OK) return (ret);
 
         /// buffer : hdr addr cmd state length data....data crc hdr
         ///           0    1   2    3     4     5
         // check length
         if (_Receive_BUF[4] != 0x28){
             DebugPrintf("%d Not enough bytes for all values\n", _Receive_BUF[4]);
-            return(ERR_DATALENGTH);
+            return(SPS30_ERR_DATALENGTH);
         }
     }
 #else
@@ -990,7 +990,7 @@ uint8_t SPS30::GetValues(struct sps_values *v)
         v->NumPM10 = byte_to_float(offset + 32);
         v->PartSize = byte_to_float(offset + 36);
     }
-    return(ERR_OK);
+    return(SPS30_ERR_OK);
 }
 
 /**
@@ -1297,7 +1297,7 @@ uint8_t SPS30::SendToSerial()
 {
     uint8_t i;
 
-    if (_Send_BUF_Length == 0) return(ERR_DATALENGTH);
+    if (_Send_BUF_Length == 0) return(SPS30_ERR_DATALENGTH);
 
     if (_SPS30_Debug){
         DebugPrintf("Sending: ");
@@ -1312,14 +1312,14 @@ uint8_t SPS30::SendToSerial()
     // indicate that command has been sent
     _Send_BUF_Length = 0;
 
-    return(ERR_OK);
+    return(SPS30_ERR_OK);
 }
 
 /**
  * @brief send command, read response & check for errors
  *
  * return :
- *  Ok = ERR_OK
+ *  Ok = SPS30_ERR_OK
  *  else Error code
  */
 uint8_t SPS30::ReadFromSerial()
@@ -1329,14 +1329,14 @@ uint8_t SPS30::ReadFromSerial()
 
     // write to serial
     ret = SendToSerial();
-    if (ret != ERR_OK) return(ret);
+    if (ret != SPS30_ERR_OK) return(ret);
 
     // wait
     delay(RX_DELAY_MS);
 
     // read serial
     ret = SerialToBuffer();
-    if (ret != ERR_OK) return(ret);
+    if (ret != SPS30_ERR_OK) return(ret);
 
     /**
      * check CRC.
@@ -1350,11 +1350,11 @@ uint8_t SPS30::ReadFromSerial()
     if (_Receive_BUF[_Receive_BUF_Length-1] != ret)
     {
         DebugPrintf("CRC error. expected 0x%02X, got 0x%02X\n",_Receive_BUF[_Receive_BUF_Length-1], ret);
-        return(ERR_PROTOCOL);
+        return(SPS30_ERR_PROTOCOL);
     }
 
     // check status
-    if (_Receive_BUF[3] != ERR_OK)
+    if (_Receive_BUF[3] != SPS30_ERR_OK)
     {
         DebugPrintf("%x : state error\n",_Receive_BUF[3]);
     }
@@ -1382,7 +1382,7 @@ uint8_t SPS30::SerialToBuffer()
         {
             level = 1;
             DebugPrintf("TimeOut during reading byte %d\n", i);
-            return(ERR_TIMEOUT);
+            return(SPS30_ERR_TIMEOUT);
         }
 
         if (_serial->available())
@@ -1395,7 +1395,7 @@ uint8_t SPS30::SerialToBuffer()
                 if (_Receive_BUF[i] != SHDLC_IND){
                     level = 1;
                     DebugPrintf("Incorrect Header. Expected 0x7E got 0x02X\n", _Receive_BUF[i]);
-                    return(ERR_PROTOCOL);
+                    return(SPS30_ERR_PROTOCOL);
                 }
             }
             else {
@@ -1426,9 +1426,9 @@ uint8_t SPS30::SerialToBuffer()
                     /* if a board can not handle 115K you get uncontrolled input
                      * that can result in short /wrong messages
                      */
-                    if (_Receive_BUF_Length < 3) return(ERR_PROTOCOL);
+                    if (_Receive_BUF_Length < 3) return(SPS30_ERR_PROTOCOL);
 
-                    return(ERR_OK);
+                    return(SPS30_ERR_OK);
                 }
             }
 
@@ -1437,7 +1437,7 @@ uint8_t SPS30::SerialToBuffer()
             if(i > MAXRECVBUFLENGTH)
             {
                 DebugPrintf("\nReceive buffer full\n");
-                return(ERR_PROTOCOL);
+                return(SPS30_ERR_PROTOCOL);
             }
         }
     }
@@ -1520,12 +1520,12 @@ void SPS30::I2C_fill_buffer(uint16_t cmd, uint32_t interval)
  * @brief : SetPointer (and write if included) with I2C communication
  *
  * return:
- * Ok ERR_OK
+ * Ok SPS30_ERR_OK
  * else error
  */
 uint8_t SPS30::I2C_SetPointer()
 {
-    if (_Send_BUF_Length == 0) return(ERR_DATALENGTH);
+    if (_Send_BUF_Length == 0) return(SPS30_ERR_DATALENGTH);
 
     if (_SPS30_Debug){
         DebugPrintf("I2C Sending: ");
@@ -1538,7 +1538,7 @@ uint8_t SPS30::I2C_SetPointer()
     _i2cPort->write(_Send_BUF, _Send_BUF_Length);
     _i2cPort->endTransmission();
 
-    return(ERR_OK);
+    return(SPS30_ERR_OK);
 }
 
 /**
@@ -1555,7 +1555,7 @@ uint8_t SPS30::I2C_SetPointer_Read(uint8_t cnt, bool chk_zero)
 
     // set pointer
     ret = I2C_SetPointer();
-    if (ret != ERR_OK) {
+    if (ret != SPS30_ERR_OK) {
         DebugPrintf("Can not set pointer\n");
         return(ret);
     }
@@ -1570,7 +1570,7 @@ uint8_t SPS30::I2C_SetPointer_Read(uint8_t cnt, bool chk_zero)
        DebugPrintf("length: %d\n\n",_Receive_BUF_Length);
     }
 
-    if (ret != ERR_OK) {
+    if (ret != SPS30_ERR_OK) {
         DebugPrintf("Error during reading from I2C: 0x%02X\n", ret);
     }
     return(ret);
@@ -1584,7 +1584,7 @@ uint8_t SPS30::I2C_SetPointer_Read(uint8_t cnt, bool chk_zero)
  *  true  : expect NULL termination and count is MAXIMUM data bytes
  *
  * return :
- * OK   ERR_OK
+ * OK   SPS30_ERR_OK
  * else error
  */
 uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
@@ -1606,7 +1606,7 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
 
             if (data[2] != I2C_calc_CRC(&data[0])){
                 DebugPrintf("I2C CRC error: Expected 0x%02X, calculated 0x%02X\n",data[2] & 0xff,I2C_calc_CRC(&data[0]) & 0xff);
-                return(ERR_PROTOCOL);
+                return(SPS30_ERR_PROTOCOL);
             }
 
             _Receive_BUF[_Receive_BUF_Length++] = data[0];
@@ -1622,7 +1622,7 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
                     // flush any bytes pending (added 1.4.8 as the Apollo 2.0.1 was NOT clearing rxBuffer)
                     // Logged as an issue and expect this could be removed in the future
                     while (_i2cPort->available()) _i2cPort->read();
-                    return(ERR_OK);
+                    return(SPS30_ERR_OK);
                 }
             }
 
@@ -1637,14 +1637,14 @@ uint8_t SPS30::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
 
     if (_Receive_BUF_Length == 0) {
         DebugPrintf("Error: Received NO bytes\n");
-        return(ERR_PROTOCOL);
+        return(SPS30_ERR_PROTOCOL);
     }
 
-    if (_Receive_BUF_Length == count) return(ERR_OK);
+    if (_Receive_BUF_Length == count) return(SPS30_ERR_OK);
 
     DebugPrintf("Error: Expected bytes : %d, Received bytes %d\n", count,_Receive_BUF_Length);
 
-    return(ERR_DATALENGTH);
+    return(SPS30_ERR_DATALENGTH);
 }
 
 /**
@@ -1658,7 +1658,7 @@ bool SPS30::I2C_Check_data_ready()
 {
    I2C_fill_buffer(I2C_READ_DATA_RDY_FLAG);
 
-   if (I2C_SetPointer_Read(2) != ERR_OK) return(false);
+   if (I2C_SetPointer_Read(2) != SPS30_ERR_OK) return(false);
 
    if (_Receive_BUF[1] == 1) return(true);
    return(false);

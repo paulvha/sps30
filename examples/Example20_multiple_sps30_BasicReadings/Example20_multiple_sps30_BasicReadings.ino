@@ -2,22 +2,22 @@
  *  Copyright (c) August 2020, version 1.0     Paul van Haastrecht
  *
  *  Version 1.0 Paul van Haastrecht August 2020
- *  - initial version 
+ *  - initial version
  *
  *  =========================  Highlevel description ================================
  *
- *  This basic reading example sketch is be able to read multiple SPS30 at the same time. They can be 
+ *  This basic reading example sketch is be able to read multiple SPS30 at the same time. They can be
  *  connected to Seria11, Serial2, Serial3, Wire Wire1 etc..
- *  
- *  You can now connect up to 5 (!) different SPS30 devices to a single Arduino DUE or 
+ *
+ *  You can now connect up to 5 (!) different SPS30 devices to a single Arduino DUE or
  *  4 on a singleMega2560 or ESP32. It has been tested with 3 SPS30 running at the same time.
  *  WHY 3... I "only" have 3 SPS30 to test :-)
- *  
- *  For now I have only tested on a MEGA2560,DUE and ESP32, but it could / should work on any 
+ *
+ *  For now I have only tested on a MEGA2560,DUE and ESP32, but it could / should work on any
  *  other board with enough Serial or Wire lines.
- *  
+ *
  *  =========================  Hardware connections =================================
- *  
+ *
  *  //////////////////////////////////////////////////////////////////////////////////
  *  ## I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C  I2C I2C I2C ##
  *  //////////////////////////////////////////////////////////////////////////////////
@@ -53,12 +53,12 @@
  *  3 SCL -------- SCL  either SCL0 (wire) or on a DUE SCL1 (Wire1) *1
  *  4 Select ----- GND  (select I2c)
  *  5 GND -------- GND
- * 
- *  *1:Just be aware the standard Wire on the DUE is a challenge due to the on-board pull-up 
- *  resistors of 1K5. (look it up on Internet... it is NOT good) 
+ *
+ *  *1:Just be aware the standard Wire on the DUE is a challenge due to the on-board pull-up
+ *  resistors of 1K5. (look it up on Internet... it is NOT good)
  *  It worked well with external 5K6 (or 10K) pull-up resistors on Wire1. See included
  *  SPS30.odt chapter 9.
- *  
+ *
  *  /////////////////////////////////////////////////////////////////////////////////
  *  ## UART UART UART UART UART UART UART UART UART UART UART UART UART UART UART  ##
  *  /////////////////////////////////////////////////////////////////////////////////
@@ -147,12 +147,12 @@
 ///// NORMALLY NO CHANGES BEYOND THIS POINT NEEDED  ///////////
 ///////////////////////////////////////////////////////////////
 // BUT IF YOU NEED TO SET DIFFERENT PINS FOR SERIAL PORT     //
-// AS IS THE CASE FOR ESP32 SERIAL1                          // 
+// AS IS THE CASE FOR ESP32 SERIAL1                          //
 // CHANGE LINE : SPS30_COMMSx.begin(115200);                 //
 //                                                           //
 // FOR ESP32 SERIAL1 TO : E.G. RX-PIN 25, TX-PIN 26          //
 // SPS30_COMMSx.begin(115200, SERIAL_8N1, 25, 26);           //
-//                                                           // 
+//                                                           //
 ///////////////////////////////////////////////////////////////
 
 // function prototypes (sometimes the pre-processor does not create prototypes themself on ESPxx)
@@ -183,23 +183,23 @@ void setup() {
 
   Serial.println(F("Trying to connect."));
 
-//*************** setup SPS30 - 1 Serial ********************************** 
+//*************** setup SPS30 - 1 Serial **********************************
 #ifdef SPS30_COMMS1
   setupSPS30(1);
 #endif
-//*************** setup SPS30 - 2 Serial ********************************** 
+//*************** setup SPS30 - 2 Serial **********************************
 #ifdef SPS30_COMMS2
   setupSPS30(2);
 #endif
-//*************** setup SPS30 - 3 Serial ********************************** 
+//*************** setup SPS30 - 3 Serial **********************************
 #ifdef SPS30_COMMS3
   setupSPS30(3);
 #endif
-//*************** setup SPS30 - 4  WIRE *********************************** 
+//*************** setup SPS30 - 4  WIRE ***********************************
 #ifdef SPS30_COMMS4
   setupSPS30(4);
 #endif
-//*************** setup SPS30 - 5  WIRE *********************************** 
+//*************** setup SPS30 - 5  WIRE ***********************************
 #ifdef SPS30_COMMS5
   setupSPS30(5);
 #endif
@@ -211,7 +211,7 @@ void loop() {
 
   struct sps_values val;
   uint8_t ret;
-  
+
 #ifdef SPS30_COMMS1
   read_all(1);
 #endif
@@ -233,7 +233,7 @@ void loop() {
 #endif
 
   Serial.println();
-  
+
   delay(3000);
 }
 
@@ -262,7 +262,7 @@ bool read_all(uint8_t d)
   }
 
     // data might not have been ready
-    if (ret == ERR_DATALENGTH){
+    if (ret == SPS30_ERR_DATALENGTH){
 
         if (error_cnt++ > 3) {
           ErrtoMess(d,(char *) "Error during reading values: ",ret);
@@ -271,11 +271,11 @@ bool read_all(uint8_t d)
     }
 
     // if other error
-    else if(ret != ERR_OK) {
+    else if(ret != SPS30_ERR_OK) {
       ErrtoMess(d,(char *) "Error during reading values: ",ret);
     }
 
-  } while (ret != ERR_OK);
+  } while (ret != SPS30_ERR_OK);
 
   // only print header first time
   if (header) {
@@ -284,10 +284,10 @@ bool read_all(uint8_t d)
     Serial.println(F("      P1.0\tP2.5\tP4.0\tP10\tP0.5\tP1.0\tP2.5\tP4.0\tP10\tPartSize\n"));
     header = false;
   }
-  
+
   Serial.print(d);
   Serial.print(F("    "));
-  
+
   Serial.print(val.MassPM1);
   Serial.print(F("\t"));
   Serial.print(val.MassPM2);
@@ -330,37 +330,37 @@ void setupSPS30(uint8_t d)
 
     // start channel
     SPS30_COMMS1.begin(115200);
-    
+
     //SPS30_COMMS1.begin(115200, SERIAL_8N1, 25, 26);    // ESP32 in case of Serial1
-    
+
     // Initialize SPS30 library
     if (!sps301.begin(&SPS30_COMMS1)) {
       Serial.println(F("\nCould not set communication channel for SPS30 - 1"));
       ErrorStop();
     }
-  
+
     // check for SPS30 connection
     if (! sps301.probe()) {
       Serial.println(F("\nCould not probe / connect with SPS30 - 1"));
       ErrorStop();
     }
-  
+
     Serial.println(F("\nDetected SPS30 - 1"));
-  
+
     // reset SPS30 connection
     if (! sps301.reset()){
       Serial.println(F("could not reset."));
       ErrorStop();
     }
-  
+
     // read device info
     GetDeviceInfo(d, false);
-    
+
     if (! sps301.start()) {
       Serial.println(F("\nCould NOT start measurement SPS30"));
       ErrorStop();
     }
-  
+
     Serial.println(F("Measurement started SPS30 - 1"));
   }
 #endif
@@ -379,29 +379,29 @@ void setupSPS30(uint8_t d)
       Serial.println(F("\nCould not set communication channel for SPS30 - 2"));
       ErrorStop();
     }
-  
+
     // check for SPS30 connection
     if (! sps302.probe()) {
       Serial.println(F("\nCould not probe / connect with SPS30 - 2"));
       ErrorStop();
     }
-  
+
     Serial.println(F("\nDetected SPS30 - 2"));
-  
+
     // reset SPS30 connection
     if (! sps302.reset()){
       Serial.println(F("could not reset."));
       ErrorStop();
     }
-  
+
     // read device info
     GetDeviceInfo(d, false);
-    
+
     if (! sps302.start()) {
       Serial.println(F("\nCould NOT start measurement SPS30"));
       ErrorStop();
     }
-  
+
     Serial.println(F("Measurement started SPS30 - 2"));
   }
 #endif
@@ -420,34 +420,34 @@ void setupSPS30(uint8_t d)
       Serial.println(F("\nCould not set communication channel for SPS30 - 3"));
       ErrorStop();
     }
-  
+
     // check for SPS30 connection
     if (! sps303.probe()) {
       Serial.println(F("\nCould not probe / connect with SPS30 - 3"));
       ErrorStop();
     }
-  
+
     Serial.println(F("\nDetected SPS30 - 3"));
-  
+
     // reset SPS30 connection
     if (! sps303.reset()){
       Serial.println(F("could not reset."));
       ErrorStop();
     }
-  
+
     // read device info
     GetDeviceInfo(d, false);
-    
+
     if (! sps303.start()) {
       Serial.println(F("\nCould NOT start measurement SPS30"));
       ErrorStop();
     }
-  
+
     Serial.println(F("Measurement started SPS30 - 3"));
   }
 #endif
 
-#ifdef SPS30_COMMS4 
+#ifdef SPS30_COMMS4
   if (d == 4)
   {
     // set driver debug level
@@ -461,31 +461,31 @@ void setupSPS30(uint8_t d)
       Serial.println(F("\nCould not set communication channel for SPS30 - 4"));
       ErrorStop();
     }
-  
+
     // check for SPS30 connection
     if (! sps304.probe()) {
       Serial.println(F("\nCould not probe / connect with SPS30 - 4"));
       ErrorStop();
     }
-  
+
     Serial.println(F("\nDetected SPS30 - 4"));
-  
+
     // reset SPS30 connection
     if (! sps304.reset()){
       Serial.println(F("could not reset."));
       ErrorStop();
     }
-  
+
     // read device info
     GetDeviceInfo(d, true);
-    
+
     if (! sps304.start()) {
       Serial.println(F("\nCould NOT start measurement SPS30"));
       ErrorStop();
     }
-  
+
     Serial.println(F("Measurement started SPS30 - 4"));
-  
+
     if (sps304.I2C_expect() == 4)
         Serial.println(F(" !!! Due to I2C buffersize only the SPS30 MASS concentration is available !!! \n"));
   }
@@ -499,39 +499,39 @@ void setupSPS30(uint8_t d)
 
     // start channel
     SPS30_COMMS5.begin();
-    
+
     //SPS30_COMMS5.begin(23,18,100000); // SDA pin 23, SCL pin 18, 100kHz frequency // Wire1 on ESP32
-    
+
     // Initialize SPS30 library
     if (!sps305.begin(&SPS30_COMMS5)) {
       Serial.println(F("\nCould not set communication channel for SPS30 - 5"));
       ErrorStop();
     }
-  
+
     // check for SPS30 connection
     if (! sps305.probe()) {
       Serial.println(F("\nCould not probe / connect with SPS30 - 5"));
       ErrorStop();
     }
-  
+
     Serial.println(F("\nDetected SPS30 - 5"));
-  
+
     // reset SPS30 connection
     if (! sps305.reset()){
       Serial.println(F("could not reset."));
       ErrorStop();
     }
-  
+
     // read device info
     GetDeviceInfo(d, true);
-    
+
     if (! sps305.start()) {
       Serial.println(F("\nCould NOT start measurement SPS30"));
       ErrorStop();
     }
-  
+
     Serial.println(F("Measurement started SPS30 - 5"));
-  
+
     if (sps305.I2C_expect() == 4)
         Serial.println(F(" !!! Due to I2C buffersize only the SPS30 MASS concentration is available !!! \n"));
   }
@@ -554,7 +554,7 @@ void GetDeviceInfo(uint8_t d, bool i2c)
   char buf[32];
   uint8_t ret;
   SPS30_version v;
-  
+
   if (d == 1) ret = sps301.GetSerialNumber(buf, 32);
   else if (d == 2) ret = sps302.GetSerialNumber(buf, 32);
   else if (d == 3) ret = sps303.GetSerialNumber(buf, 32);
@@ -565,7 +565,7 @@ void GetDeviceInfo(uint8_t d, bool i2c)
     return;
   }
   //try to read serial number
-  if (ret == ERR_OK) {
+  if (ret == SPS30_ERR_OK) {
     Serial.print(F("Serial number : "));
     if(strlen(buf) > 0) {
       Serial.print(buf);
@@ -586,7 +586,7 @@ void GetDeviceInfo(uint8_t d, bool i2c)
   else if (d == 5) ret = sps305.GetProductName(buf, 32);
   // try to get product name
 
-  if (ret == ERR_OK)  {
+  if (ret == SPS30_ERR_OK)  {
     Serial.print(F(" Product name  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
@@ -594,7 +594,7 @@ void GetDeviceInfo(uint8_t d, bool i2c)
   }
   else
     ErrtoMess(d,(char *)"could not get product name.", ret);
-    
+
    // try to get version info
   if (d == 1) ret = sps301.GetVersion(&v);
   else if (d == 2) ret = sps302.GetVersion(&v);
@@ -602,7 +602,7 @@ void GetDeviceInfo(uint8_t d, bool i2c)
   else if (d == 4) ret = sps304.GetVersion(&v);
   else if (d == 5) ret = sps305.GetVersion(&v);
 
-  if (ret != ERR_OK) {
+  if (ret != SPS30_ERR_OK) {
     Serial.println(F("Can not read version info"));
     return;
   }
@@ -611,13 +611,13 @@ void GetDeviceInfo(uint8_t d, bool i2c)
   Serial.print(".");  Serial.print(v.minor);
 
   Serial.print(F(" Hardware level: "));  Serial.print(v.HW_version);
-  
+
   // if Wire channel : no SHDLC info
   if (i2c){
     Serial.println();
     return;
   }
-  
+
   Serial.print(F(" SHDLC protocol: ")); Serial.print(v.SHDLC_major);
   Serial.print(".");  Serial.print(v.SHDLC_minor);
 

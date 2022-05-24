@@ -347,16 +347,16 @@ typedef union {
 
 /*************************************************************/
 /* error codes */
-#define ERR_OK          0x00
-#define ERR_DATALENGTH  0X01
-#define ERR_UNKNOWNCMD  0x02
-#define ERR_ACCESSRIGHT 0x03
-#define ERR_PARAMETER   0x04
-#define ERR_OUTOFRANGE  0x28
-#define ERR_CMDSTATE    0x43
-#define ERR_TIMEOUT     0x50
-#define ERR_PROTOCOL    0x51
-#define ERR_FIRMWARE    0x88        // added version 1.4
+#define SPS30_ERR_OK          0x00
+#define SPS30_ERR_DATALENGTH  0X01
+#define SPS30_ERR_UNKNOWNCMD  0x02
+#define SPS30_ERR_ACCESSRIGHT 0x03
+#define SPS30_ERR_PARAMETER   0x04
+#define SPS30_ERR_OUTOFRANGE  0x28
+#define SPS30_ERR_CMDSTATE    0x43
+#define SPS30_ERR_TIMEOUT     0x50
+#define SPS30_ERR_PROTOCOL    0x51
+#define SPS30_ERR_FIRMWARE    0x88        // added version 1.4
 
 /* Receive buffer length. Expected is 40 bytes max
  * but you never know in the future.. */
@@ -551,7 +551,7 @@ class SPS30
      * Depreciated in Datasheet March 2020
      * left for backward compatibility with older sketches
      */
-    uint8_t GetArticleCode(char *ser, uint8_t len)  {ser[0] = 0x0; return ERR_OK;}
+    uint8_t GetArticleCode(char *ser, uint8_t len)  {ser[0] = 0x0; return SPS30_ERR_OK;}
 
     /** ADDED 1.4
      * @brief : retrieve software/hardware version information from the SPS-30
@@ -574,8 +574,8 @@ class SPS30
      *   STATUS_FAN_ERROR = 4
      *
      * @return
-     *  ERR_OK = ok, no isues found
-     *  else ERR_OUTOFRANGE, issues found
+     *  SPS30_ERR_OK = ok, no isues found
+     *  else SPS30_ERR_OUTOFRANGE, issues found
      */
     uint8_t GetStatusReg(uint8_t *status);
 

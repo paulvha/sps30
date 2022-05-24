@@ -45,6 +45,9 @@ The embedded approach, and thus backward compatibility, continue to be available
 
 ## Versioning
 
+### version 1.4.14 / May 2022
+ * changed ERR_xxx to SPS30_ERR_xxx due to conflict with other program
+
 ### version 1.4.13 / January 2022
  * Different corrections in SPS30.odt
 

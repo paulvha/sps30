@@ -273,7 +273,7 @@ void GetDeviceInfo()
 
   //try to read serial number
   ret = sps30.GetSerialNumber(buf, 32);
-  if (ret == ERR_OK) {
+  if (ret == SPS30_ERR_OK) {
     Serial.print(F("Serial number : "));
     if(strlen(buf) > 0)  Serial.println(buf);
     else Serial.println(F("not available"));
@@ -283,7 +283,7 @@ void GetDeviceInfo()
 
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
-  if (ret == ERR_OK) {
+  if (ret == SPS30_ERR_OK) {
     Serial.print(F("Product name  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
@@ -295,7 +295,7 @@ void GetDeviceInfo()
 
   // try to get version info
   ret = sps30.GetVersion(&v);
-  if (ret != ERR_OK) {
+  if (ret != SPS30_ERR_OK) {
     Serial.println(F("Can not read version info"));
     return;
   }

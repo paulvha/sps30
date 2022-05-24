@@ -8,32 +8,32 @@
  *
  *  This basic reading example sketch will connect to an SPS30 for getting data and
  *  display the available data with Sleep and Wakeup()
- *  
+ *
  *  Measured results :
  *  In idle mode the SPS30 takes 0.32 mA
  *  In Sleep mode the SPS30 takes 0,03mA
  *  In Measurement mode the SPS30 takes 52mA
- *  
+ *
  *  New firmware levels have been slipped streamed into the SPS30
  *  The datasheet from March 2020 shows added / updated functions on new
  *  firmware level: sleep(), wakeup(), device status register are new
  *
- *  On serial connection the new functions are accepted and positive 
- *  acknowledged on lower level firmware, but execution does not seem 
+ *  On serial connection the new functions are accepted and positive
+ *  acknowledged on lower level firmware, but execution does not seem
  *  to happen or should be expected.
  *
  *  On I2C reading Status register gives an error on lower level firmware.
- *  Sleep and wakeup are accepted and positive acknowledged on lower level 
+ *  Sleep and wakeup are accepted and positive acknowledged on lower level
  *  firmware, but execution does not seem to happen or should be expected.
- *  
- *  This sketch demonstates the usage sleep(), wakeup() 
+ *
+ *  This sketch demonstates the usage sleep(), wakeup()
  *  Sleep() and Wakeup() requires firmware 2.0.
- *  
+ *
  *  Starting version 1.4 of the SPS30 driver a firmware level check has been implemented
  *  and in case a function is called that requires a higher level than
  *  on the current SPS30, it will return an error.
  *  By setting INCLUDE_FWCHECK to 0 in SPS30.h, this check can be disabled
- *  
+ *
  *  =========================  Hardware connections =================================
  *  /////////////////////////////////////////////////////////////////////////////////
  *  ## UART UART UART UART UART UART UART UART UART UART UART UART UART UART UART  ##
@@ -220,7 +220,7 @@ void setup() {
   if (TX_PIN != 0 && RX_PIN != 0) sps30.SetSerialPin(RX_PIN,TX_PIN);
 
   // Begin communication channel;
-  if (! sps30.begin(SP30_COMMS)) 
+  if (! sps30.begin(SP30_COMMS))
     Errorloop((char *) "could not initialize communication channel.", 0);
 
   // check for SPS30 connection
@@ -246,18 +246,18 @@ void setup() {
 }
 
 void loop() {
-  
+
   uint8_t ret;
-  
+
   // read all ddata
   read_all();
-  
+
   Serial.println("Entering sleep-mode");
 
-  // put the SPS30 to sleep 
+  // put the SPS30 to sleep
   ret = sps30.sleep();
 
-  if (ret != ERR_OK) {
+  if (ret != SPS30_ERR_OK) {
     ErrtoMess((char *) "ERROR: Could not set SPS30 to sleep. ", ret);
   }
 
@@ -265,17 +265,17 @@ void loop() {
   delay(10000);
 
   Serial.println("Perform wakeup");
-  
+
   // wakeup SPS30
   ret = sps30.wakeup();
 
-  if (ret != ERR_OK) {
+  if (ret != SPS30_ERR_OK) {
     ErrtoMess((char *) "ERROR: Could not wakeup SPS30. ", ret);
   }
 
   // as the SPS30 was in measurement mode before sleep that is restored
   Serial.println("measurement mode");
-    
+
   // give time for new air to flow in
   delay(5000);
 }
@@ -291,7 +291,7 @@ void GetDeviceInfo()
 
   //try to read serial number
   ret = sps30.GetSerialNumber(buf, 32);
-  if (ret == ERR_OK) {
+  if (ret == SPS30_ERR_OK) {
     Serial.print(F("Serial number : "));
     if(strlen(buf) > 0)  Serial.println(buf);
     else Serial.println(F("not available"));
@@ -301,7 +301,7 @@ void GetDeviceInfo()
 
   // try to get product name
   ret = sps30.GetProductName(buf, 32);
-  if (ret == ERR_OK)  {
+  if (ret == SPS30_ERR_OK)  {
     Serial.print(F("Product name  : "));
 
     if(strlen(buf) > 0)  Serial.println(buf);
@@ -312,11 +312,11 @@ void GetDeviceInfo()
 
   // try to get version info
   ret = sps30.GetVersion(&v);
-  if (ret != ERR_OK) {
+  if (ret != SPS30_ERR_OK) {
     Serial.println(F("Can not read version info"));
     return;
   }
-  
+
   Serial.print(F("Firmware level: "));  Serial.print(v.major);
   Serial.print("."); Serial.println(v.minor);
 
@@ -346,7 +346,7 @@ bool read_all()
     ret = sps30.GetValues(&val);
 
     // data might not have been ready
-    if (ret == ERR_DATALENGTH){
+    if (ret == SPS30_ERR_DATALENGTH){
 
         if (error_cnt++ > 3) {
           ErrtoMess((char *) "Error during reading values: ",ret);
@@ -356,12 +356,12 @@ bool read_all()
     }
 
     // if other error
-    else if(ret != ERR_OK) {
+    else if(ret != SPS30_ERR_OK) {
       ErrtoMess((char *) "Error during reading values: ",ret);
       return(false);
     }
 
-  } while (ret != ERR_OK);
+  } while (ret != SPS30_ERR_OK);
 
   // only print header first time
   if (header) {
