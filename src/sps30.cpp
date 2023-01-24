@@ -1472,7 +1472,7 @@ void SPS30::I2C_init()
 {
     Wire.begin();               // changed 1.4.2.
     _i2cPort = &Wire;
-    _i2cPort->setClock(100000); // 1.4.8 Apollo3 is default 400K (although stated differently)
+    _i2cPort->setClock(100000); // 1.4.8 Apollo3 V2.0 is default 400K (although stated differently)
 }
 
 /**

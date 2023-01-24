@@ -120,6 +120,9 @@
  * version 1.4.11 / July 2021
  *  - fixed error handling in Getvalues()
  *
+ * version 1.4.12 / January 2023
+ *  - autodetection for Nano MBED i2C size (needed for NANO BLE 33 and nRF52480)
+ *
  *********************************************************************
 */
 #ifndef SPS30_H
@@ -190,7 +193,7 @@ enum debug_serial {
 #define INCLUDE_SOFTWARE_SERIAL 1
 
 /**
- * If the platform is an ESP32 AND it is planned to connect an SCD30,
+ * If the platform is an ESP32 AND it is planned to connect an SCD30 as well,
  * you have to remove the comments from the line below
  *
  * The standard I2C on an ESP32 does NOT support clock stretching
@@ -219,7 +222,7 @@ enum debug_serial {
 
 #if defined INCLUDE_I2C
 
-    #if defined SOFTI2C_ESP32       // in case of SCD30
+    #if defined SOFTI2C_ESP32       // in case of use in combination with SCD30
         #include <SoftWire/SoftWire.h>
     #else
         #include "Wire.h"           // for I2c
@@ -254,9 +257,10 @@ enum debug_serial {
 
     /* version 1.3.2 added support for SAMD SERCOM detection */
     /* version 1.4.8 autodetection for Apollo3 */
+    /* version 1.4.12 autdetection for MBED Nano (Micromod nRF52840 */
 
     // Depending on definition in wire.h (RingBufferN<256> rxBuffer;)
-    #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_APOLLO3
+    #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_APOLLO3 || defined ARDUINO_ARCH_MBED_NANO
         #undef  I2C_LENGTH
         #define I2C_LENGTH  256
     #endif

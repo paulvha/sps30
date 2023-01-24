@@ -3,7 +3,7 @@
 ## ===========================================================
 
 A program to set instructions and get information from an SPS30. It has been
-tested to run either UART or I2C communication on ESP32, MEGA2560, ESP8266, UNO, Due and Apollo3.
+tested to run either UART or I2C communication on ESP32, MEGA2560, ESP8266, UNO, Due, nRF52840 and Apollo3.
 In the meantime many other boards have been added to the test as well as extended
 interface options. (see below)
 <br> A detailed description of the options and findings are in SPS30.odt
@@ -18,6 +18,7 @@ I have not been able to find a good source for that and was glad to buy the Spar
 (https://www.sparkfun.com/products/15103) which does include a cable with this plug.
 
 <br> May 2019 : there is also a library available for Raspberry Pi (https://github.com/paulvha/sps30_on_raspberry)
+<br> January 2023 : there is also SPS30 BLE-peripheral, BLE-central and Android BLE-APP (https://github.com/paulvha/apollo3/tree/master/ArduinoBLE_special)
 
 ## Prerequisites
 Examples 4, 5, 7, 8, 10, 15 and 16 have a dependency on other libraries. Documented in sketch.
@@ -44,6 +45,9 @@ provide that to the SP30 library. Example12 (for serial communication) and Examp
 The embedded approach, and thus backward compatibility, continue to be available.
 
 ## Versioning
+
+### Version 1.4.15 / January 2023
+ * autodetection added for Nano MBED i2C size (needed for NANO BLE 33 and nRF52480)
 
 ### version 1.4.14 / May 2022
  * changed ERR_xxx to SPS30_ERR_xxx due to conflict with other program
