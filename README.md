@@ -46,6 +46,9 @@ The embedded approach, and thus backward compatibility, continue to be available
 
 ## Versioning
 
+### Version 1.4.16 / Janaury 2023
+ * fixed compile error in the embedded approach as Serial2 is not defined by default for ESP32C3 over Espressif 5.0.0 and also over Espressif 6.0.0
+
 ### Version 1.4.15 / January 2023
  * autodetection added for Nano MBED i2C size (needed for NANO BLE 33 and nRF52480)
 

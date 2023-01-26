@@ -117,6 +117,9 @@
  *
  * version 1.4.11 / July 2021
  *  - fixed error handling in Getvalues()
+ *
+ * Version 1.4.16 / January 2023
+ *  - fixed error Serial2 is not defined by default anymore ESP32C3 over Espressif 5.0.0 and also over Espressif 6.0.0
  *********************************************************************
  */
 
@@ -1094,10 +1097,15 @@ bool SPS30::setSerialSpeed()
             break;
 
         case SERIALPORT2:
+#ifdef Serial2                // 1.4.16
             Serial2.begin(_Serial_baud);
             _serial = &Serial2;
+#else
+            DebugPrintf("Serial2 not defined for this device.\n");
+            return false;
+#endif  // Serial2
             break;
-#endif
+#endif  // ARDUINO_ARCH_ESP32
         default:
 
             if (Serial_RX == 0 || Serial_TX == 0){

@@ -120,7 +120,7 @@
  * version 1.4.11 / July 2021
  *  - fixed error handling in Getvalues()
  *
- * version 1.4.12 / January 2023
+ * version 1.4.15 / January 2023
  *  - autodetection for Nano MBED i2C size (needed for NANO BLE 33 and nRF52480)
  *
  *********************************************************************
@@ -257,7 +257,7 @@ enum debug_serial {
 
     /* version 1.3.2 added support for SAMD SERCOM detection */
     /* version 1.4.8 autodetection for Apollo3 */
-    /* version 1.4.12 autdetection for MBED Nano (Micromod nRF52840 */
+    /* version 1.4.15 autdetection for MBED Nano (Micromod nRF52840 */
 
     // Depending on definition in wire.h (RingBufferN<256> rxBuffer;)
     #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_APOLLO3 || defined ARDUINO_ARCH_MBED_NANO
@@ -292,7 +292,7 @@ enum debug_serial {
  *   SOFTWARE_SERIAL        Arduino variants and ESP8266 (On ESP32 software Serial is NOT very stable)
  *   SERIALPORT             ONLY IF there is NO monitor attached
  *   SERIALPORT1            Arduino MEGA2560, 32U4, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
- *   SERIALPORT2            Arduino MEGA2560, Due and ESP32
+ *   SERIALPORT2            Arduino MEGA2560, Due and ESP32 (NOT ESP32C3 + Espressif version 5.0.0 and higher)
  *   SERIALPORT3            Arduino MEGA2560 and Due only for now
  *   NONE                   No port defined
  *
