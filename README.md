@@ -46,6 +46,11 @@ The embedded approach, and thus backward compatibility, continue to be available
 
 ## Versioning
 
+### Version 1.4.17 / October 2023
+ * added support for UNO-R4 WIFI in SERIALPORT1
+ * added support (adding extra reset delay) for UNO-R4 WIFI /UNO-R4 MINIMA on I2C
+ * updated documentation
+
 ### Version 1.4.16 / Janaury 2023
  * fixed compile error in the embedded approach as Serial2 is not defined by default for ESP32C3 over Espressif 5.0.0 and also over Espressif 6.0.0
 

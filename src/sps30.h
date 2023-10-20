@@ -112,7 +112,7 @@
  *  - added flushing in case of Checkzero() (problem in Artemis)
  *
  * version 1.4.9 / December 2020
- *  - autodetection for Nano BLE 33 to undef softwareSerial
+ *  - autodetection for Nano BLE 33 to undef SoftwareSerial
  *
  * version 1.4.10 / February 2021
  *  - Fixed typos in autodetection for Nano BLE 33 / Apollo3 for SoftwareSerial detection
@@ -122,6 +122,13 @@
  *
  * version 1.4.15 / January 2023
  *  - autodetection for Nano MBED i2C size (needed for NANO BLE 33 and nRF52480)
+ *
+ * Version 1.4.16 / January 2023
+ *  - fixed error Serial2 is not defined by default anymore ESP32C3 over Espressif 5.0.0 and also over Espressif 6.0.0
+ *
+ * Version 1.4.17 / October 2023
+ *  - added support for UNO-R4 WIFI in SERIALPORT1
+ *  - added support (adding reset delay) for UNO-R4 WIFI / MINIMA on I2C
  *
  *********************************************************************
 */
@@ -250,7 +257,7 @@ enum debug_serial {
         #define I2C_LENGTH  BUFFER_LENGTH
     #endif
 
-    #if defined I2C_BUFFER_LENGTH       // ESP32
+    #if defined I2C_BUFFER_LENGTH       // ESP32 & UNO-R4(255) - 1.4.17
         #undef  I2C_LENGTH
         #define I2C_LENGTH  I2C_BUFFER_LENGTH
     #endif
@@ -291,7 +298,7 @@ enum debug_serial {
  *   I2C_COMMS              use I2C communication
  *   SOFTWARE_SERIAL        Arduino variants and ESP8266 (On ESP32 software Serial is NOT very stable)
  *   SERIALPORT             ONLY IF there is NO monitor attached
- *   SERIALPORT1            Arduino MEGA2560, 32U4, Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
+ *   SERIALPORT1            Arduino MEGA2560, 32U4, UNO-R4-WIFI,Sparkfun ESP32 Thing : MUST define new pins as defaults are used for flash memory)
  *   SERIALPORT2            Arduino MEGA2560, Due and ESP32 (NOT ESP32C3 + Espressif version 5.0.0 and higher)
  *   SERIALPORT3            Arduino MEGA2560 and Due only for now
  *   NONE                   No port defined

@@ -120,6 +120,10 @@
  *
  * Version 1.4.16 / January 2023
  *  - fixed error Serial2 is not defined by default anymore ESP32C3 over Espressif 5.0.0 and also over Espressif 6.0.0
+ *
+ * Version 1.4.17 / October 2023
+ *  - added support for UNO-R4 WIFI in SERIALPORT1
+ *  - added support (adding reset delay) for UNO-R4 WIFI / MINIMA on I2C
  *********************************************************************
  */
 
@@ -562,7 +566,6 @@ bool SPS30::Instruct(uint8_t type)
             return(false);      // update version 1.4.6
 
         ret = I2C_SetPointer();
-
     }
     else // if serial communication
 #endif // INCLUDE_I2C
@@ -588,12 +591,13 @@ bool SPS30::Instruct(uint8_t type)
 
         else if (type == SER_RESET){
             _started = false;
+            delay(500); //1.4.17 support for UNOR4
 #if defined INCLUDE_I2C
             if (_Sensor_Comms == I2C_COMMS) {
                 _i2cPort->begin();       // some I2C channels need a reset
             }
+            delay(500); //1.4.17 support for UNOR4
 #endif
-            delay(2000);
         }
 
         return(true);
@@ -1058,7 +1062,8 @@ bool SPS30::setSerialSpeed()
             break;
 // added NANO 33 IOT board  = SAMD21G18A (addition from Firepoo) // 1.4.2
 // added Arduino due version 1.4.4
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(SAMD21G18A) || defined(ARDUINO_SAM_DUE)
+// UNOR4 WIFI 1.4.17
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(SAMD21G18A) || defined(ARDUINO_SAM_DUE) || defined(ARDUINO_UNOR4_WIFI)
         case SERIALPORT1:
             Serial1.begin(_Serial_baud);
             _serial = &Serial1;
