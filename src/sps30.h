@@ -8,7 +8,7 @@
  * The I2C link has a number of restrictions. See detailed document
  *
  * Development environment specifics:
- * Arduino IDE 1.8.12 and 1.8.13
+ * Arduino IDE 1.8.12 / 1.8.13 / 1.18.19 / 2.3.7
  *
  *
  * This program is distributed in the hope that it will be useful,
@@ -17,7 +17,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
  * Version 1.0   / January 2019
@@ -130,11 +130,16 @@
  *  - added support for UNO-R4 WIFI in SERIALPORT1
  *  - added support (adding reset delay) for UNO-R4 WIFI / MINIMA on I2C
  *
+ * Version 1.4.18 / January 2026
+ *  - added support for UNOQ with INPUT SERIAL port
+ *  - change debug display functions for UNOQ
+ *  - added example21 for UNOQ
+ *  - removed SODAQ board support
+ *
  *********************************************************************
 */
 #ifndef SPS30_H
 #define SPS30_H
-
 
 /**
  * library version levels
@@ -142,21 +147,7 @@
 #define DRIVER_MAJOR 1
 #define DRIVER_MINOR 4
 
-/**
- * select debug serial (1.3.10)
- */
 #define SPS30_DEBUGSERIAL Serial            // default
-
-#if defined(ARDUINO_SODAQ_AUTONOMO) || defined(ARDUINO_SODAQ_SARA) || defined(ARDUINO_SODAQ_SFF)
-#define SPS30_DEBUGSERIAL_SODAQ SerialUSB
-#endif
-
-enum debug_serial {
-    STANDARD = 0,                           // default
-#ifdef SPS30_DEBUGSERIAL_SODAQ
-    SODAQ = 1
-#endif
-};
 
 /**
  * ADDED version 1.4
@@ -265,9 +256,10 @@ enum debug_serial {
     /* version 1.3.2 added support for SAMD SERCOM detection */
     /* version 1.4.8 autodetection for Apollo3 */
     /* version 1.4.15 autdetection for MBED Nano (Micromod nRF52840 */
+    /* Version 1.4.18 autodetection for UNOQ / ARDUINO_ARCH_ZEPHYR */
 
     // Depending on definition in wire.h (RingBufferN<256> rxBuffer;)
-    #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_APOLLO3 || defined ARDUINO_ARCH_MBED_NANO
+    #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_APOLLO3 || defined ARDUINO_ARCH_MBED_NANO || defined ARDUINO_ARCH_ZEPHYR
         #undef  I2C_LENGTH
         #define I2C_LENGTH  256
     #endif
@@ -283,8 +275,9 @@ enum debug_serial {
       /* version 1.4.4 autodetection for Arduino DUE to undef softwareSerial */
       /* version 1.4.8 autodetection for Apollo3 to undef softwareSerial */
       /* version 1.4.9 autodetection for Nano BLE 33 to undef softwareSerial */
+      /* Version 1.4.18 autodetection for UNOQ / ARDUINO_ARCH_ZEPHYR to undef softwareSerial */
 
-      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32 || defined ARDUINO_SAM_DUE || defined ARDUINO_ARCH_APOLLO3 ||defined ARDUINO_ARCH_NRF52840
+      #if defined ARDUINO_ARCH_SAMD || defined ARDUINO_ARCH_SAM21D || defined ARDUINO_ARCH_ESP32 || defined ARDUINO_SAM_DUE || defined ARDUINO_ARCH_APOLLO3 ||defined ARDUINO_ARCH_NRF52840 || defined ARDUINO_ARCH_ZEPHYR
         #undef  INCLUDE_SOFTWARE_SERIAL
       #else
          #include <SoftwareSerial.h>        // softserial
@@ -314,7 +307,7 @@ enum serial_port {
     SERIALPORT1 = 3,
     SERIALPORT2 = 4,
     SERIALPORT3 = 5,
-    COMM_TYPE_SERIAL = 6,      // added 1.4.2
+    COMM_TYPE_SERIAL = 6,   // added 1.4.2
     NONE = 6
 };
 
@@ -367,15 +360,14 @@ typedef union {
 #define SPS30_ERR_CMDSTATE    0x43
 #define SPS30_ERR_TIMEOUT     0x50
 #define SPS30_ERR_PROTOCOL    0x51
-#define SPS30_ERR_FIRMWARE    0x88        // added version 1.4
+#define SPS30_ERR_FIRMWARE    0x88    // added version 1.4
 
 /* Receive buffer length. Expected is 40 bytes max
  * but you never know in the future.. */
 #if defined SMALLFOOTPRINT
-#define MAXRECVBUFLENGTH 50         // for light boards
-
+  #define MAXRECVBUFLENGTH 50         // for low  memory boards
 #else
-#define MAXRECVBUFLENGTH 128
+  #define MAXRECVBUFLENGTH 128
 
 struct Description {
     uint8_t code;
@@ -417,7 +409,7 @@ enum SPS_status {
 /**
  * added version 1.4
  *
- * Measurement can be done in FLOAR or unsigned 16bits
+ * Measurement can be done in FLOAT or unsigned 16bits
  * page 6 datasheet SPS30 page 6.
  *
  * This driver only uses float
@@ -487,12 +479,8 @@ class SPS30
     *  0 : no debug message
     *  1 : sending and receiving data
     *  2 : 1 +  protocol progress
-    *
-    * @param SelectDebugSerial : select Serial port (see top of SPS30.h)
-    *  This will allow to select a different port than Serial for debug
-    *  messages. As real example an SODAQ NB board is using SerialUSB.
     */
-    void EnableDebugging(uint8_t act, debug_serial SelectDebugSerial = STANDARD);
+    void EnableDebugging(uint8_t act);
 
     /**
      * @brief Initialize the communication port
@@ -633,6 +621,10 @@ class SPS30
 
   private:
     void DebugPrintf(const char *pcFmt, ...);
+    #if defined ARDUINO_ARCH_ZEPHYR  // 1.4.18
+    void DebugPrintf2(const char *pcFmt, int p, int k);
+    void DebugPrintf1(const char *pcFmt, int p);
+    #endif
 
     /** shared variables */
     uint8_t _Receive_BUF[MAXRECVBUFLENGTH]; // buffers
@@ -642,7 +634,6 @@ class SPS30
 
     serial_port _Sensor_Comms;          // communication channel to use
     int _SPS30_Debug;                   // program debug level
-    debug_serial _SPS30_Debug_Serial;   // serial debug-port to use
     bool _started;                      // indicate the measurement has started
     bool _sleep;                        // indicate that SPS30 is in sleep (added 1.4)
     bool _WasStarted;                   // restart if SPS30 was started before setting sleep (added 1.4)
@@ -653,7 +644,7 @@ class SPS30
 
     /** shared supporting routines */
     uint8_t Get_Device_info(uint8_t type, char *ser, uint8_t len);
-    bool Instruct(uint8_t type);
+    bool Instruct(uint16_t type);
     uint8_t SetOpMode(uint8_t mode);            // added 1.4
     bool FWCheck(uint8_t major, uint8_t minor); // added 1.4
     float byte_to_float(int x);

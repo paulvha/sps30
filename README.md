@@ -3,7 +3,7 @@
 ## ===========================================================
 
 A program to set instructions and get information from an SPS30. It has been
-tested to run either UART or I2C communication on ESP32, MEGA2560, ESP8266, UNO, Due, nRF52840 and Apollo3.
+tested to run either UART or I2C communication on ESP32, MEGA2560, ESP8266, UNO, UNOQ, Due, nRF52840 and Apollo3.
 In the meantime many other boards have been added to the test as well as extended
 interface options. (see below)
 <br> A detailed description of the options and findings are in SPS30.odt
@@ -45,6 +45,15 @@ provide that to the SP30 library. Example12 (for serial communication) and Examp
 The embedded approach, and thus backward compatibility, continue to be available.
 
 ## Versioning
+
+### Version 1.4.18 / January 2026
+ * added support for UNOQ  Serial and I2C
+ * added output to Serial or Monitor
+ * added example21 to demonstrate usage
+ * autoadjust the I2C buffersize for UNOQ
+ * autodetect to exclude softwareSerial for UNOQ
+ * removed SODAQ board support
+ * updated documentation
 
 ### Version 1.4.17 / October 2023
  * added support for UNO-R4 WIFI in SERIALPORT1
