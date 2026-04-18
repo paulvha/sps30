@@ -15,7 +15,8 @@ More work continues to happen to create examples and compare against other senso
 
 A word of warning: the SPS30 needs a female plug of ZHR-5 from JST Sales America Inc.
 I have not been able to find a good source for that and was glad to buy the Sparkfun version
-(https://www.sparkfun.com/products/15103) which does include a cable with this plug.
+(https://www.sparkfun.com/products/15103) which does include a cable with this plug.<br>
+See more information at bottom of this README.md
 
 <br> May 2019 : there is also a library available for Raspberry Pi (https://github.com/paulvha/sps30_on_raspberry)
 <br> January 2023 : there is also SPS30 BLE-peripheral, BLE-central and Android BLE-APP (https://github.com/paulvha/apollo3/tree/master/ArduinoBLE_special)
@@ -60,7 +61,7 @@ The embedded approach, and thus backward compatibility, continue to be available
  * added support (adding extra reset delay) for UNO-R4 WIFI /UNO-R4 MINIMA on I2C
  * updated documentation
 
-### Version 1.4.16 / Janaury 2023
+### Version 1.4.16 / January 2023
  * fixed compile error in the embedded approach as Serial2 is not defined by default for ESP32C3 over Espressif 5.0.0 and also over Espressif 6.0.0
 
 ### Version 1.4.15 / January 2023
@@ -211,20 +212,16 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgments
 
-### Make sure to read the datasheet from Sensirion, March 2020 version.<br>
+### Make sure to read the datasheet from Sensirion, June 2023 version.<br>
 ### In case you are new to electronics and wonder about pull-up resistors for I2C, see below (thanks to Shane Diller)
 ![Uno and SP30](extras/sensirion.png)
 <br>
 
-### June 2021, Input from CCDZAPPER:
+### June 2021, Input from CCDZAPPER: / April 2026 : updated to 1.5mm and updated outdated link
 
-This is not an issue - just a note to help others that may have damaged or lost the flimsy cable with the ZHR-5 connector. It is available inexpensively on eBay: ![https://www.ebay.com/itm/114551266422](https://www.ebay.com/itm/114551266422)
-Make sure you pick the correct type, which is 1.25mm 5 Pin.
-(10 Sets JST SH 1.0 ZH 1.5 PH 2.0 XH 2.5 Housing Connector Female Male Wire)
+This is not an issue - just a note to help others that may have damaged or lost the flimsy cable with the ZHR-5 connector.
+Make sure you pick the correct type, which is 1.50 mm 5 Pin.  https://www.digikey.com/en/products/detail/jst-sales-america-inc/ZHR-5/608642
 
-### October 2021: Input from Urs Utzinger
-
-Reducing the I2C speed to 50K instead of 100K improves longer time stability.
 
 ### October 2021 : Input from Nkea
 
@@ -236,3 +233,6 @@ https://www.mouser.es/ProductDetail/Wurth-Elektronik/648005113322?qs=%2Fha2pyFad
 crimp contacts
 https://www.mouser.es/ProductDetail/Wurth-Elektronik/64800113722DEC?qs=%2Fha2pyFaduguH2zIpdkgUUfd6dp6pTTujW8FuBzdSDO2pxvJN95p5w%3D%3D
 
+### October 2021: Input from Urs Utzinger
+
+Reducing the I2C speed to 50K instead of 100K improves longer time stability.
